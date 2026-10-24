@@ -28,25 +28,25 @@ export const seedDatabase = (repositories = {}) => {
 
   // 1. Usuarios: 2 organizadores y 2 compradores
   const org1 = new Usuario({
-    id: 'org-1',
+    id: 'usr-org-1',
     nombre: 'Charly',
     apellido: 'García Producciones'
   });
 
   const org2 = new Usuario({
-    id: 'org-2',
+    id: 'usr-org-2',
     nombre: 'Teatro',
     apellido: 'Gran Rex'
   });
 
   const comp1 = new Usuario({
-    id: 'comp-1',
+    id: 'usr-comp-1',
     nombre: 'Ana',
     apellido: 'Gómez'
   });
 
   const comp2 = new Usuario({
-    id: 'comp-2',
+    id: 'usr-comp-2',
     nombre: 'Lucas',
     apellido: 'Fernández'
   });
@@ -89,7 +89,7 @@ export const seedDatabase = (repositories = {}) => {
   // 3. Eventos y Tipos de Entrada
   // Evento Futuro 1 (Rock)
   const teRockGeneral = new TipoEntrada({
-    id: 'te-rock-gen',
+    id: 'tipo-1',
     nombre: 'Campo General',
     descripcion: 'Acceso a campo',
     precio: 8000,
@@ -97,7 +97,7 @@ export const seedDatabase = (repositories = {}) => {
   });
 
   const teRockVip = new TipoEntrada({
-    id: 'te-rock-vip',
+    id: 'tipo-2',
     nombre: 'VIP Experiencia',
     descripcion: 'Acceso preferencial y consumición',
     precio: 20000,
@@ -105,7 +105,7 @@ export const seedDatabase = (repositories = {}) => {
   });
 
   const eventoFuturoRock = new Evento({
-    id: 'evt-rock-2027',
+    id: 'evt-1',
     nombre: 'Cosquín Rock 2027',
     descripcion: 'El festival multitudinario de rock en las sierras',
     categoria: catRock,
@@ -117,7 +117,7 @@ export const seedDatabase = (repositories = {}) => {
 
   // Evento Futuro 2 (Teatro)
   const teTeatroPlatea = new TipoEntrada({
-    id: 'te-teatro-pla',
+    id: 'tipo-3',
     nombre: 'Platea Baja',
     descripcion: 'Ubicación central frente al escenario',
     precio: 6000,
@@ -125,7 +125,7 @@ export const seedDatabase = (repositories = {}) => {
   });
 
   const teTeatroPullman = new TipoEntrada({
-    id: 'te-teatro-pul',
+    id: 'tipo-4',
     nombre: 'Pullman',
     descripcion: 'Planta alta sin numerar',
     precio: 3500,
@@ -133,7 +133,7 @@ export const seedDatabase = (repositories = {}) => {
   });
 
   const eventoFuturoTeatro = new Evento({
-    id: 'evt-teatro-2027',
+    id: 'evt-2',
     nombre: 'Toc Toc',
     descripcion: 'Comedia exitosa sobre los trastornos obsesivos',
     categoria: catTeatro,
@@ -145,14 +145,14 @@ export const seedDatabase = (repositories = {}) => {
 
   // Evento Pasado 1 (Rock)
   const tePasadoRock = new TipoEntrada({
-    id: 'te-pasado-rock',
+    id: 'tipo-pasado-1',
     nombre: 'General Pasado',
     precio: 4000,
     cupo: 50
   });
 
   const eventoPasadoRock = new Evento({
-    id: 'evt-pasado-rock-2025',
+    id: 'evt-pasado-1',
     nombre: 'Divididos en Vivo 2025',
     descripcion: 'Concierto histórico en el estadio',
     categoria: catRock,
@@ -163,14 +163,14 @@ export const seedDatabase = (repositories = {}) => {
 
   // Evento Pasado 2 (Stand Up)
   const tePasadoStandUp = new TipoEntrada({
-    id: 'te-pasado-su',
+    id: 'tipo-pasado-2',
     nombre: 'Entrada Show',
     precio: 5000,
     cupo: 30
   });
 
   const eventoPasadoStandUp = new Evento({
-    id: 'evt-pasado-su-2025',
+    id: 'evt-pasado-2',
     nombre: 'Noche de Stand Up Cómico 2025',
     descripcion: 'Monólogos y risas sin parar',
     categoria: catStandUp,
@@ -197,7 +197,7 @@ export const seedDatabase = (repositories = {}) => {
 
   // Compra 2: CONFIRMADA con mensajes en el chat
   const compraConfirmada = new Compra({
-    id: 'compra-confirmada-2',
+    id: 'compra-confirmada-1',
     comprador: comp2,
     evento: eventoFuturoTeatro,
     tipoEntrada: teTeatroPlatea,
@@ -210,7 +210,7 @@ export const seedDatabase = (repositories = {}) => {
 
   // Compra 3: UTILIZADA (con Reseña posterior)
   const compraUtilizadaReseniada = new Compra({
-    id: 'compra-utilizada-3',
+    id: 'compra-utilizada-1',
     comprador: comp1,
     evento: eventoPasadoRock,
     tipoEntrada: tePasadoRock,
@@ -221,7 +221,7 @@ export const seedDatabase = (repositories = {}) => {
 
   // Compra 4: UTILIZADA (SIN Reseña, para tests)
   const compraUtilizadaSinReseniar = new Compra({
-    id: 'compra-utilizada-4',
+    id: 'compra-utilizada-sin-resenia',
     comprador: comp2,
     evento: eventoPasadoStandUp,
     tipoEntrada: tePasadoStandUp,
@@ -232,7 +232,7 @@ export const seedDatabase = (repositories = {}) => {
 
   // Compra 5: CANCELADA
   const compraCancelada = new Compra({
-    id: 'compra-cancelada-5',
+    id: 'compra-cancelada-1',
     comprador: comp1,
     evento: eventoFuturoRock,
     tipoEntrada: teRockVip,
@@ -249,6 +249,7 @@ export const seedDatabase = (repositories = {}) => {
 
   // 5. Reseñas
   const resenia1 = Resenia.crearDesdeCompra(compraUtilizadaReseniada, {
+    id: 'resenia-1',
     detalle: 'Excelente sonido y la organización fue perfecta.',
     puntuacion: 5,
     fecha: new Date('2025-10-11T12:00:00Z')

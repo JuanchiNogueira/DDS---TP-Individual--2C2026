@@ -34,6 +34,17 @@ export class CambioEstadoCompra {
     this.fechaHora = parsedFechaHora;
     this.motivo = typeof motivo === 'string' ? motivo.trim() : '';
   }
+
+  toJSON() {
+    return {
+      id: this.id,
+      compraId: this.compra?.id ?? null,
+      estado: this.estado,
+      quien: this.quien,
+      fechaHora: this.fechaHora,
+      motivo: this.motivo
+    };
+  }
 }
 
 export default CambioEstadoCompra;

@@ -42,7 +42,7 @@ export class Resenia {
     this.fecha = parsedFecha;
   }
 
-  static crearDesdeCompra(compra, { detalle, puntuacion, fecha = new Date() } = {}) {
+  static crearDesdeCompra(compra, { id = randomUUID(), detalle, puntuacion, compraId, fecha = new Date() } = {}) {
     if (!compra || !(compra instanceof Compra)) {
       throw new ValidationError('La compra es requerida para emitir la reseña');
     }
@@ -52,11 +52,12 @@ export class Resenia {
       );
     }
     return new Resenia({
+      id,
       comprador: compra.comprador,
       evento: compra.evento,
       detalle,
       puntuacion,
-      compraId: compra.id,
+      compraId: compraId || compra.id,
       fecha
     });
   }

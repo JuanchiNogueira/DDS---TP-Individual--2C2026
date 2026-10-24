@@ -44,8 +44,8 @@ describe('DataSeeder Unit Tests', () => {
     expect(datosSembrados.eventos).toHaveLength(4);
 
     // Compras en distintos estados
-    const compras = compraRepository.buscarPorComprador('comp-1').concat(
-      compraRepository.buscarPorComprador('comp-2')
+    const compras = compraRepository.buscarPorComprador('usr-comp-1').concat(
+      compraRepository.buscarPorComprador('usr-comp-2')
     );
     expect(compras.length).toBeGreaterThanOrEqual(4);
 
@@ -61,7 +61,7 @@ describe('DataSeeder Unit Tests', () => {
     expect(compraConChat.mensajes.length).toBeGreaterThanOrEqual(2);
 
     // Reseñas cargadas
-    expect(reseniaRepository.buscarPorOrganizador('org-1').length).toBeGreaterThanOrEqual(1);
+    expect(reseniaRepository.buscarPorOrganizador('usr-org-1').length).toBeGreaterThanOrEqual(1);
 
     // Compra UTILIZADA sin reseñar disponible para pruebas
     const comprasUtilizadas = compras.filter((c) => c.estado === EstadoCompra.UTILIZADA);
@@ -98,6 +98,6 @@ describe('DataSeeder Unit Tests', () => {
     expect(usuarioRepository.listarTodos()).toHaveLength(4);
     expect(categoriaRepository.listarTodas()).toHaveLength(4);
     expect(eventoRepository.listarTodos()).toHaveLength(4);
-    expect(reseniaRepository.buscarPorOrganizador('org-1')).toHaveLength(1);
+    expect(reseniaRepository.buscarPorOrganizador('usr-org-1')).toHaveLength(1);
   });
 });

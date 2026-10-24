@@ -5,6 +5,7 @@
   "type": "module",
   "main": "src/index.js",
   "scripts": {
+    "start": "node src/server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
   },
@@ -20,6 +21,7 @@
     "cors": "^2.8.6",
     "dotenv": "^18.0.9",
     "express": "^4.21.2",
+    "swagger-ui-express": "^5.0.1",
     "zod": "^3.24.2"
   },
   "devDependencies": {
