@@ -1,5 +1,6 @@
 import { describe, test, expect } from '@jest/globals';
-import { Categoria, ValidationError } from '../../src/domain/index.js';
+import { Categoria } from '../../src/domain/Categoria.js';
+import { ValidationError } from '../../src/domain/errors/DomainError.js';
 
 describe('Categoria Domain Entity', () => {
   test('debe instanciar una categoría válida con id generado automáticamente', () => {

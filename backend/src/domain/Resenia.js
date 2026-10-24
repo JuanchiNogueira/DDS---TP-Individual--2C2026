@@ -12,6 +12,7 @@ export class Resenia {
     evento,
     detalle,
     puntuacion,
+    compraId = null,
     fecha = new Date()
   } = {}) {
     if (!comprador || !(comprador instanceof Usuario)) {
@@ -37,6 +38,7 @@ export class Resenia {
     this.evento = evento;
     this.detalle = detalle.trim();
     this.puntuacion = puntuacion;
+    this.compraId = compraId;
     this.fecha = parsedFecha;
   }
 
@@ -54,6 +56,7 @@ export class Resenia {
       evento: compra.evento,
       detalle,
       puntuacion,
+      compraId: compra.id,
       fecha
     });
   }

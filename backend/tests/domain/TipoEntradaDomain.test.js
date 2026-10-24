@@ -1,5 +1,6 @@
 import { describe, test, expect } from '@jest/globals';
-import { TipoEntrada, ValidationError, ConflictError } from '../../src/domain/index.js';
+import { TipoEntrada } from '../../src/domain/TipoEntrada.js';
+import { ValidationError, ConflictError } from '../../src/domain/errors/DomainError.js';
 
 describe('TipoEntrada Domain Entity', () => {
   test('debe instanciar correctamente con cupo, precio y nombre', () => {

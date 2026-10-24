@@ -1,12 +1,9 @@
 import { describe, test, expect } from '@jest/globals';
-import {
-  Evento,
-  Categoria,
-  Usuario,
-  TipoEntrada,
-  ValidationError,
-  NotFoundError
-} from '../../src/domain/index.js';
+import { Evento } from '../../src/domain/Evento.js';
+import { Categoria } from '../../src/domain/Categoria.js';
+import { Usuario } from '../../src/domain/Usuario.js';
+import { TipoEntrada } from '../../src/domain/TipoEntrada.js';
+import { ValidationError, NotFoundError } from '../../src/domain/errors/DomainError.js';
 
 describe('Evento Domain Entity', () => {
   const setupHelpers = () => {

@@ -1,15 +1,12 @@
 import { describe, test, expect } from '@jest/globals';
-import {
-  Resenia,
-  Usuario,
-  Evento,
-  Categoria,
-  TipoEntrada,
-  Compra,
-  EstadoCompra,
-  ValidationError,
-  ConflictError
-} from '../../src/domain/index.js';
+import { Resenia } from '../../src/domain/Resenia.js';
+import { Usuario } from '../../src/domain/Usuario.js';
+import { Evento } from '../../src/domain/Evento.js';
+import { Categoria } from '../../src/domain/Categoria.js';
+import { TipoEntrada } from '../../src/domain/TipoEntrada.js';
+import { Compra } from '../../src/domain/Compra.js';
+import { EstadoCompra } from '../../src/domain/EstadoCompra.js';
+import { ValidationError, ConflictError } from '../../src/domain/errors/DomainError.js';
 
 describe('Resenia Domain Entity', () => {
   const setupHelpers = () => {

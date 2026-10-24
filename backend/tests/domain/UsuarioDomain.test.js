@@ -1,5 +1,6 @@
 import { describe, test, expect } from '@jest/globals';
-import { Usuario, ValidationError } from '../../src/domain/index.js';
+import { Usuario } from '../../src/domain/Usuario.js';
+import { ValidationError } from '../../src/domain/errors/DomainError.js';
 
 describe('Usuario Domain Entity', () => {
   test('debe instanciar un usuario válido con nombre completo y favoritos vacíos por defecto', () => {

@@ -72,6 +72,17 @@ export class Evento {
     return tipo;
   }
 
+  obtenerPrecioMinimo() {
+    if (this.tiposEntrada.length === 0) {
+      return 0;
+    }
+    return Math.min(...this.tiposEntrada.map((t) => t.precio));
+  }
+
+  yaOcurrio(fechaReferencia = new Date()) {
+    return this.yaPaso(fechaReferencia);
+  }
+
   yaPaso(fechaReferencia = new Date()) {
     const ref = fechaReferencia instanceof Date ? fechaReferencia : new Date(fechaReferencia);
     if (isNaN(ref.getTime())) {

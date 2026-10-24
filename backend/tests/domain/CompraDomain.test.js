@@ -1,15 +1,15 @@
 import { describe, test, expect } from '@jest/globals';
+import { Compra } from '../../src/domain/Compra.js';
+import { EstadoCompra } from '../../src/domain/EstadoCompra.js';
+import { Usuario } from '../../src/domain/Usuario.js';
+import { Categoria } from '../../src/domain/Categoria.js';
+import { TipoEntrada } from '../../src/domain/TipoEntrada.js';
+import { Evento } from '../../src/domain/Evento.js';
 import {
-  Compra,
-  EstadoCompra,
-  Usuario,
-  Categoria,
-  TipoEntrada,
-  Evento,
   ConflictError,
   ValidationError,
   ForbiddenDomainError
-} from '../../src/domain/index.js';
+} from '../../src/domain/errors/DomainError.js';
 
 describe('Compra Domain Entity', () => {
   const setupFixtures = () => {
