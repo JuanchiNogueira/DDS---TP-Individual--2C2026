@@ -39,6 +39,7 @@ export function DetalleEventoScreen({ eventoId, onVolver, onIrAMisCompras }) {
   const [comprando, setComprando] = useState(false);
   const [errorCompra, setErrorCompra] = useState(null);
   const [exitoCompra, setExitoCompra] = useState(null);
+  const [modalConfirmacionVisible, setModalConfirmacionVisible] = useState(false);
 
   const evento = detalle?.evento || detalle;
   const puntajeOrganizador = detalle?.puntajeOrganizador;
@@ -83,7 +84,7 @@ export function DetalleEventoScreen({ eventoId, onVolver, onIrAMisCompras }) {
     setCantidad(String(clamped));
   };
 
-  const handleComprar = async () => {
+  const handleAbrirConfirmacion = () => {
     setErrorCompra(null);
     setExitoCompra(null);
 
@@ -103,6 +104,13 @@ export function DetalleEventoScreen({ eventoId, onVolver, onIrAMisCompras }) {
       return;
     }
 
+    setModalConfirmacionVisible(true);
+  };
+
+  const handleEjecutarCompra = async () => {
+    setErrorCompra(null);
+    const cantNum = parseInt(cantidad, 10);
+
     try {
       setComprando(true);
       const body = {
@@ -114,6 +122,7 @@ export function DetalleEventoScreen({ eventoId, onVolver, onIrAMisCompras }) {
       };
 
       const compraRealizada = await apiClient.post('/compras', body);
+      setModalConfirmacionVisible(false);
       setExitoCompra({
         id: compraRealizada?.id || 'OK',
         eventoNombre: evento?.nombre || 'Evento',
@@ -406,22 +415,134 @@ export function DetalleEventoScreen({ eventoId, onVolver, onIrAMisCompras }) {
           </View>
         ) : null}
 
-        {/* Botón Confirmar Compra */}
+        {/* Botón Comprar Entradas (Abre el modal de confirmación) */}
         <TouchableOpacity
-          style={[styles.btnComprar, comprando && styles.btnComprarDisabled]}
-          onPress={handleComprar}
-          disabled={comprando}
+          style={styles.btnComprar}
+          onPress={handleAbrirConfirmacion}
           accessibilityRole="button"
-          accessibilityLabel="Confirmar compra de entradas"
+          accessibilityLabel="Iniciar confirmación de compra"
           testID="btn-comprar-entradas"
         >
-          {comprando ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Text style={styles.btnComprarText}>Confirmar Compra</Text>
-          )}
+          <Text style={styles.btnComprarText}>Comprar Entradas</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Modal de Confirmación Previa de Compra (Checkout) */}
+      {modalConfirmacionVisible && (
+        <Modal
+          visible={true}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setModalConfirmacionVisible(false)}
+        >
+          <View style={styles.modalOverlay} testID="modal-confirmar-compra">
+            <View style={styles.modalConfirmSheet}>
+              {/* Encabezado */}
+              <View style={styles.modalConfirmHeader}>
+                <View style={styles.modalConfirmIconWrap}>
+                  <Text style={styles.modalConfirmIcon}>🎟️</Text>
+                </View>
+                <View style={styles.flex}>
+                  <Text style={styles.modalConfirmTitle}>Confirmar Compra</Text>
+                  <Text style={styles.modalConfirmSubtitle}>
+                    Revisá los detalles antes de procesar el pago
+                  </Text>
+                </View>
+              </View>
+
+              {/* Resumen de orden */}
+              <View style={styles.modalConfirmDetailsBox}>
+                <View style={styles.confirmRow}>
+                  <Text style={styles.confirmLabel}>Evento:</Text>
+                  <Text style={styles.confirmValueBold} numberOfLines={1}>
+                    {evento?.nombre}
+                  </Text>
+                </View>
+
+                <View style={styles.confirmRow}>
+                  <Text style={styles.confirmLabel}>Fecha:</Text>
+                  <Text style={styles.confirmValue}>
+                    📅 {formatDate(evento?.fecha)}
+                  </Text>
+                </View>
+
+                <View style={styles.confirmRow}>
+                  <Text style={styles.confirmLabel}>Entrada:</Text>
+                  <Text style={styles.confirmValue}>
+                    {tipoEntradaSeleccionado?.nombre}
+                  </Text>
+                </View>
+
+                <View style={styles.confirmRow}>
+                  <Text style={styles.confirmLabel}>Cantidad:</Text>
+                  <Text style={styles.confirmValue}>
+                    {cantValida} {cantValida === 1 ? 'entrada' : 'entradas'}
+                  </Text>
+                </View>
+
+                <View style={styles.confirmRow}>
+                  <Text style={styles.confirmLabel}>Precio unitario:</Text>
+                  <Text style={styles.confirmValue}>
+                    {formatPrice(precioUnitario)}
+                  </Text>
+                </View>
+
+                <View style={styles.confirmDivider} />
+
+                <View style={styles.confirmRowTotal}>
+                  <Text style={styles.confirmTotalLabel}>Total a pagar:</Text>
+                  <Text style={styles.confirmTotalValue}>
+                    {formatPrice(totalEstimado)}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Alerta de Error si ocurre durante la compra */}
+              {errorCompra ? (
+                <View
+                  style={styles.errorAlert}
+                  accessibilityRole="alert"
+                  testID="alerta-error-compra"
+                >
+                  <Text style={styles.errorText}>⚠️ {errorCompra}</Text>
+                </View>
+              ) : null}
+
+              {/* Botones de acción */}
+              <View style={styles.modalConfirmActions}>
+                <TouchableOpacity
+                  style={[styles.btnConfirmarPago, comprando && styles.btnComprarDisabled]}
+                  onPress={handleEjecutarCompra}
+                  disabled={comprando}
+                  accessibilityRole="button"
+                  accessibilityLabel="Confirmar y pagar entrada"
+                  testID="btn-confirmar-pago-modal"
+                >
+                  {comprando ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.btnConfirmarPagoText}>Confirmar y Pagar</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.btnCancelarModal}
+                  onPress={() => {
+                    setErrorCompra(null);
+                    setModalConfirmacionVisible(false);
+                  }}
+                  disabled={comprando}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancelar compra y volver"
+                  testID="btn-cancelar-modal-compra"
+                >
+                  <Text style={styles.btnCancelarModalText}>Cancelar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {/* Modal de Éxito de Compra */}
       {exitoCompra && (
@@ -896,6 +1017,113 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   btnSeguirExplorandoText: {
+    color: COLORS.textMuted,
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  modalConfirmSheet: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: 22,
+    gap: 16,
+    ...CARD_SHADOW
+  },
+  modalConfirmHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12
+  },
+  modalConfirmIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: COLORS.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  modalConfirmIcon: {
+    fontSize: 22
+  },
+  modalConfirmTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.text
+  },
+  modalConfirmSubtitle: {
+    fontSize: 13,
+    color: COLORS.textMuted
+  },
+  modalConfirmDetailsBox: {
+    backgroundColor: COLORS.inputBackground,
+    borderRadius: 14,
+    padding: 14,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border
+  },
+  confirmRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  confirmLabel: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    fontWeight: '500'
+  },
+  confirmValue: {
+    fontSize: 13,
+    color: COLORS.text,
+    fontWeight: '600'
+  },
+  confirmValueBold: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: '800',
+    maxWidth: '60%'
+  },
+  confirmDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 4
+  },
+  confirmRowTotal: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  confirmTotalLabel: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.text
+  },
+  confirmTotalValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.primary
+  },
+  modalConfirmActions: {
+    gap: 8,
+    paddingTop: 4
+  },
+  btnConfirmarPago: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center'
+  },
+  btnConfirmarPagoText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800'
+  },
+  btnCancelarModal: {
+    paddingVertical: 10,
+    alignItems: 'center'
+  },
+  btnCancelarModalText: {
     color: COLORS.textMuted,
     fontSize: 14,
     fontWeight: '600'

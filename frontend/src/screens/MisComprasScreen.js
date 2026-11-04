@@ -217,7 +217,7 @@ export function MisComprasScreen() {
               testID={`btn-cancelar-compra-${item.id}`}
             >
               {cancelandoId === item.id ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator size="small" color={COLORS.danger} />
               ) : (
                 <Text style={styles.btnCancelarText}>🚫 Cancelar compra y reembolsar</Text>
               )}
@@ -488,15 +488,15 @@ const styles = StyleSheet.create({
   },
   btnCancelar: {
     borderWidth: 1.5,
-    borderColor: COLORS.danger,
-    backgroundColor: COLORS.card,
+    borderColor: '#FCA5A5',
+    backgroundColor: COLORS.dangerSoft,
     paddingVertical: 11,
     paddingHorizontal: 14,
     borderRadius: 12,
     alignItems: 'center'
   },
   btnCancelarText: {
-    color: COLORS.danger,
+    color: '#B91C1C',
     fontSize: 13,
     fontWeight: '800'
   },

@@ -53,10 +53,15 @@ test('Test 1: Camino Feliz - Búsqueda y Compra de Entrada', async ({ page }) =>
   // Verificar que el cálculo total se actualiza ($20000 * 2 = $40000)
   await expect(page.getByTestId('detalle-compra-total')).toContainText('$40000');
 
-  // Confirmar compra
+  // Confirmar compra (abre modal de confirmación y confirma el pago)
   const btnComprar = page.getByTestId('btn-comprar-entradas');
   await expect(btnComprar).toBeVisible();
   await btnComprar.click();
+
+  const btnConfirmarModal = page.getByTestId('btn-confirmar-pago-modal');
+  if (await btnConfirmarModal.isVisible()) {
+    await btnConfirmarModal.click();
+  }
 
   // Verificar alerta de éxito y navegar a Mis Compras
   const alertaExito = page.getByTestId('alerta-exito-compra');
@@ -101,6 +106,11 @@ test('Test 2: Camino Triste - Intento de compra superando el cupo disponible', a
   const btnComprar = page.getByTestId('btn-comprar-entradas');
   await expect(btnComprar).toBeVisible();
   await btnComprar.click();
+
+  const btnConfirmarModal = page.getByTestId('btn-confirmar-pago-modal');
+  if (await btnConfirmarModal.isVisible()) {
+    await btnConfirmarModal.click();
+  }
 
   // 3. VERIFICAR
   // Verificar que aparece el contenedor de alerta de error informando falta de cupo
