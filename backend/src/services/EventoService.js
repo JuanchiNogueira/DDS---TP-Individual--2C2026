@@ -53,7 +53,7 @@ export class EventoService {
       organizador
     });
 
-    return await this.eventoRepository.guardar(evento);
+    return this.eventoRepository.guardar(evento);
   }
 
   async buscarEventos({
@@ -71,11 +71,20 @@ export class EventoService {
       precioMax
     });
 
+    const puntajesCache = new Map();
+
     const eventosEnriquecidos = await Promise.all(
       eventos.map(async (evento) => {
-        const puntaje = await this.reseniaRepository.calcularPromedioPorOrganizador(
-          evento.organizador.id
-        );
+        const orgId = evento.organizador?.id;
+        let puntaje = 0;
+        if (orgId) {
+          if (puntajesCache.has(orgId)) {
+            puntaje = puntajesCache.get(orgId);
+          } else {
+            puntaje = await this.reseniaRepository.calcularPromedioPorOrganizador(orgId);
+            puntajesCache.set(orgId, puntaje);
+          }
+        }
         evento.puntajeOrganizador = puntaje;
         return evento;
       })
@@ -135,7 +144,7 @@ export class EventoService {
   }
 
   async listarCategorias() {
-    return await this.categoriaRepository.listarTodas();
+    return this.categoriaRepository.listarTodas();
   }
 }
 

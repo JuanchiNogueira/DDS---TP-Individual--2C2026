@@ -44,7 +44,7 @@ export class ReseniaService {
       compraId
     });
 
-    return await this.reseniaRepository.guardar(resenia);
+    return this.reseniaRepository.guardar(resenia);
   }
 
   async listarReseniasPorOrganizador(organizadorId) {

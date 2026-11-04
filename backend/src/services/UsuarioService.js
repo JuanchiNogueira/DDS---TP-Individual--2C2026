@@ -13,7 +13,7 @@ export class UsuarioService {
   }
 
   async listarUsuarios() {
-    return await this.usuarioRepository.listarTodos();
+    return this.usuarioRepository.listarTodos();
   }
 
   async obtenerUsuarioPorId(id) {

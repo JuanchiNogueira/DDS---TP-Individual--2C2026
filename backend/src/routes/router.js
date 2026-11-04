@@ -8,6 +8,8 @@ import usuarioRoutes from './usuarioRoutes.js';
 import { eventoController } from '../controllers/EventoController.js';
 import { compraController } from '../controllers/CompraController.js';
 import { seedController } from '../controllers/SeedController.js';
+import { validateRequest } from '../middlewares/validateRequest.js';
+import { listarComprasPorEventoSchema } from '../schemas/CompraSchema.js';
 
 const router = express.Router();
 
@@ -31,8 +33,10 @@ router.get('/categorias', (req, res, next) =>
 );
 
 // Ruta combinada para listar compras por evento
-router.get('/eventos/:eventoId/compras', (req, res, next) =>
-  compraController.listarComprasPorEvento(req, res, next)
+router.get(
+  '/eventos/:eventoId/compras',
+  validateRequest(listarComprasPorEventoSchema),
+  (req, res, next) => compraController.listarComprasPorEvento(req, res, next)
 );
 
 router.use('/eventos', eventoRoutes);

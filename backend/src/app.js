@@ -15,7 +15,12 @@ seedDatabase();
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || '*',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+  })
+);
 app.use(router);
 app.use(notFoundHandler);
 app.use(errorLogger);

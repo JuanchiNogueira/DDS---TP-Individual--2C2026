@@ -21,7 +21,8 @@ export class Compra {
     total,
     estado = EstadoCompra.CONFIRMADA,
     mensajes = [],
-    historialEstados = [],
+    cambiosEstado = [],
+    historialEstados = null,
     fechaCreacion = new Date(),
     descontarCupoAlCrear = true
   } = {}) {
@@ -65,11 +66,13 @@ export class Compra {
     this.total = calculatedTotal;
     this.estado = estado;
     this.mensajes = Array.isArray(mensajes) ? [...mensajes] : [];
-    this.historialEstados = Array.isArray(historialEstados) ? [...historialEstados] : [];
+    this.cambiosEstado = Array.isArray(historialEstados ?? cambiosEstado)
+      ? [...(historialEstados ?? cambiosEstado)]
+      : [];
     this.fechaCreacion = parsedFechaCreacion;
 
-    if (this.historialEstados.length === 0) {
-      this.historialEstados.push(
+    if (this.cambiosEstado.length === 0) {
+      this.cambiosEstado.push(
         new CambioEstadoCompra({
           compra: this,
           estado: this.estado,
@@ -79,6 +82,14 @@ export class Compra {
         })
       );
     }
+  }
+
+  get historialEstados() {
+    return this.cambiosEstado;
+  }
+
+  set historialEstados(val) {
+    this.cambiosEstado = val;
   }
 
   actualizarEstado(nuevoEstado, quien, motivo = '') {
@@ -97,11 +108,11 @@ export class Compra {
       motivo
     });
 
-    this.historialEstados.push(cambio);
+    this.cambiosEstado.push(cambio);
     this.estado = nuevoEstado;
   }
 
-  calcularDiasFaltantes(fechaReferencia = new Date()) {
+  calcularDiasParaElEvento(fechaReferencia = new Date()) {
     if (this.estado !== EstadoCompra.CONFIRMADA) {
       throw new ConflictError(
         `Solo es posible calcular los días faltantes para compras en estado CONFIRMADA (estado actual: ${this.estado})`
@@ -117,7 +128,21 @@ export class Compra {
     return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   }
 
+  calcularDiasFaltantes(fechaReferencia = new Date()) {
+    return this.calcularDiasParaElEvento(fechaReferencia);
+  }
+
   cancelar(quien, fechaReferencia = new Date(), motivo = 'Cancelación por usuario') {
+    if (!quien || !(quien instanceof Usuario)) {
+      throw new ValidationError('El usuario que solicita la cancelación es requerido');
+    }
+
+    const esComprador = this.comprador?.id === quien.id;
+    const esOrganizador = this.evento?.organizador?.id === quien.id;
+    if (!esComprador && !esOrganizador) {
+      throw new ForbiddenDomainError('No tiene permisos para cancelar esta compra');
+    }
+
     if (this.estado === EstadoCompra.UTILIZADA) {
       throw new ConflictError('No se puede cancelar una compra que ya fue utilizada');
     }
@@ -126,7 +151,7 @@ export class Compra {
       throw new ConflictError(`La compra ya se encuentra ${this.estado.toLowerCase()}`);
     }
 
-    if (this.evento.yaPaso(fechaReferencia)) {
+    if (this.evento.yaOcurrio(fechaReferencia)) {
       throw new ConflictError('No se puede cancelar una compra de un evento que ya se ha realizado');
     }
 

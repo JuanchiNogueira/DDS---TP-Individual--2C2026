@@ -45,7 +45,7 @@ export class CompraService {
       descontarCupoAlCrear: true
     });
 
-    return await this.compraRepository.guardar(compra);
+    return this.compraRepository.guardar(compra);
   }
 
   async listarComprasPorComprador(compradorId) {
@@ -161,7 +161,20 @@ export class CompraService {
       throw new NotFoundError('Usuario no encontrado');
     }
 
-    compra.actualizarEstado(nuevoEstado, usuario);
+    const esComprador = compra.comprador?.id === usuario.id;
+    const esOrganizador = compra.evento?.organizador?.id === usuario.id;
+    if (!esComprador && !esOrganizador) {
+      throw new ForbiddenDomainError('No tiene permisos para modificar el estado de esta compra');
+    }
+
+    if (nuevoEstado === EstadoCompra.CANCELADA) {
+      compra.cancelar(usuario, new Date(), 'Cancelación por actualización de estado');
+    } else if (nuevoEstado === EstadoCompra.UTILIZADA) {
+      compra.marcarComoUtilizada(usuario);
+    } else {
+      compra.actualizarEstado(nuevoEstado, usuario);
+    }
+
     await this.compraRepository.guardar(compra);
     return compra;
   }

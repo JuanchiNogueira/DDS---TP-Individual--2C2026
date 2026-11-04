@@ -220,6 +220,49 @@ describe('Compra Domain Entity', () => {
     expect(accionReCancelar).toThrow(ConflictError);
   });
 
+  test('debe lanzar ForbiddenDomainError si un tercero no autorizado intenta cancelar la compra (BOLA/IDOR)', () => {
+    // Arrange
+    const { comprador, tercero, evento, tipoEntrada } = setupFixtures();
+    const compra = new Compra({
+      comprador,
+      evento,
+      tipoEntrada,
+      cantidad: 1,
+      estado: EstadoCompra.CONFIRMADA
+    });
+
+    // Act
+    const accionCancelarTercero = () => compra.cancelar(tercero);
+
+    // Assert
+    expect(accionCancelarTercero).toThrow(ForbiddenDomainError);
+    expect(compra.estado).toBe(EstadoCompra.CONFIRMADA);
+  });
+
+  test('debe implementar calcularDiasParaElEvento y exponer cambiosEstado según contrato canónico', () => {
+    // Arrange
+    const { comprador, evento, tipoEntrada } = setupFixtures();
+    const fechaReferencia = new Date('2026-10-10T00:00:00Z');
+    evento.fecha = new Date('2026-10-15T00:00:00Z');
+
+    const compra = new Compra({
+      comprador,
+      evento,
+      tipoEntrada,
+      cantidad: 1,
+      estado: EstadoCompra.CONFIRMADA
+    });
+
+    // Act
+    const dias = compra.calcularDiasParaElEvento(fechaReferencia);
+
+    // Assert
+    expect(dias).toBe(5);
+    expect(compra.cambiosEstado).toBeDefined();
+    expect(compra.cambiosEstado.length).toBeGreaterThan(0);
+    expect(compra.cambiosEstado[0].estado).toBe(EstadoCompra.CONFIRMADA);
+  });
+
   test('debe permitir el intercambio de mensajes entre comprador y organizador', () => {
     // Arrange
     const { comprador, organizador, evento, tipoEntrada } = setupFixtures();
