@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   View,
@@ -6,6 +6,8 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet
 } from 'react-native';
 import apiClient from '../api/apiClient';
@@ -20,17 +22,20 @@ export function ReseniaModal({ compra, visible, onClose, onReseniaPublicada }) {
   const [detalle, setDetalle] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
+  const visiblePrevRef = useRef(false);
 
   useEffect(() => {
-    if (visible) {
+    if (visible && !visiblePrevRef.current) {
       setPuntuacion(5);
       setDetalle('');
       setError(null);
     }
-  }, [visible, compra]);
+    visiblePrevRef.current = visible;
+  }, [visible]);
 
   const handleEnviar = async () => {
-    if (!detalle.trim()) {
+    const detalleLimpio = detalle.trim();
+    if (!detalleLimpio) {
       setError('El comentario de la reseña no puede estar vacío');
       return;
     }
@@ -53,7 +58,7 @@ export function ReseniaModal({ compra, visible, onClose, onReseniaPublicada }) {
         compraId: compra.id,
         compradorId: usuarioActivo.id,
         puntuacion,
-        detalle: detalle.trim()
+        detalle: detalleLimpio
       });
 
       if (onReseniaPublicada) {
@@ -76,7 +81,10 @@ export function ReseniaModal({ compra, visible, onClose, onReseniaPublicada }) {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.overlay}
+      >
         <View style={styles.modalContainer} testID="modal-resenia">
           {/* Cabecera */}
           <View style={styles.header}>
@@ -178,7 +186,7 @@ export function ReseniaModal({ compra, visible, onClose, onReseniaPublicada }) {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

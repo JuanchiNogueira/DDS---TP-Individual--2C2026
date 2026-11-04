@@ -1,17 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet
 } from 'react-native';
 import apiClient from '../api/apiClient';
 import { useSession } from '../context/SessionContext';
-import { COLORS, CARD_SHADOW } from '../theme/colors';
+import { COLORS, CARD_SHADOW, formatDate } from '../theme/colors';
 
 export function ChatCompraModal({ compra, visible, onClose, onMensajeEnviado }) {
   const { usuarioActivo } = useSession();
@@ -19,17 +21,25 @@ export function ChatCompraModal({ compra, visible, onClose, onMensajeEnviado }) 
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
   const [mensajesLocales, setMensajesLocales] = useState([]);
+  const flatListRef = useRef(null);
+  const visiblePrevRef = useRef(false);
 
+  // Sincronizar mensajes cuando se abre el modal o cambia la compra
   useEffect(() => {
-    if (compra) {
+    if (visible && compra) {
       setMensajesLocales(compra.mensajes || []);
       setError(null);
-      setTexto('');
+      // Limpiar texto solo en la transición inicial de apertura (no en re-renders subsecuentes)
+      if (!visiblePrevRef.current) {
+        setTexto('');
+      }
     }
-  }, [compra, visible]);
+    visiblePrevRef.current = visible;
+  }, [compra?.id, visible]);
 
   const handleEnviar = async () => {
-    if (!texto.trim()) {
+    const textoLimpio = texto.trim();
+    if (!textoLimpio) {
       setError('El texto del mensaje no puede estar vacío');
       return;
     }
@@ -50,7 +60,7 @@ export function ChatCompraModal({ compra, visible, onClose, onMensajeEnviado }) 
 
       const nuevoMensaje = await apiClient.post(`/compras/${compra.id}/mensajes`, {
         usuarioId: usuarioActivo.id,
-        texto: texto.trim()
+        texto: textoLimpio
       });
 
       setMensajesLocales((prev) => [...prev, nuevoMensaje]);
@@ -66,21 +76,6 @@ export function ChatCompraModal({ compra, visible, onClose, onMensajeEnviado }) 
     }
   };
 
-  const formatearFechaHora = (fechaRaw) => {
-    try {
-      const d = new Date(fechaRaw);
-      if (isNaN(d.getTime())) return String(fechaRaw);
-      return d.toLocaleDateString('es-AR', {
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return String(fechaRaw);
-    }
-  };
-
   if (!visible) return null;
 
   return (
@@ -90,7 +85,10 @@ export function ChatCompraModal({ compra, visible, onClose, onMensajeEnviado }) 
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.overlay}
+      >
         <View style={styles.modalContainer}>
           {/* Cabecera del Chat */}
           <View style={styles.header}>
@@ -118,50 +116,51 @@ export function ChatCompraModal({ compra, visible, onClose, onMensajeEnviado }) 
             </TouchableOpacity>
           </View>
 
-          {/* Mensajes */}
-          <ScrollView
+          {/* Mensajes Virtualizados con FlatList */}
+          <FlatList
+            ref={flatListRef}
+            data={mensajesLocales}
+            keyExtractor={(item, index) => (item?.id ? String(item.id) : `msg-${index}`)}
             style={styles.mensajesList}
             contentContainerStyle={styles.mensajesContent}
             testID="lista-mensajes-chat"
-          >
-            {mensajesLocales && mensajesLocales.length > 0 ? (
-              mensajesLocales.map((m, idx) => {
-                const esMio = m.usuario?.id === usuarioActivo?.id;
-                const nombreEmisor = m.usuario
-                  ? `${m.usuario.nombre || ''} ${m.usuario.apellido || ''}`.trim() || 'Usuario'
-                  : 'Usuario';
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            renderItem={({ item: m, index: idx }) => {
+              const esMio = m.usuario?.id === usuarioActivo?.id;
+              const nombreEmisor = m.usuario
+                ? `${m.usuario.nombre || ''} ${m.usuario.apellido || ''}`.trim() || 'Usuario'
+                : 'Usuario';
 
-                return (
-                  <View
-                    key={m.id || idx}
-                    style={[
-                      styles.mensajeBubble,
-                      esMio ? styles.mensajeMio : styles.mensajeOtro
-                    ]}
-                    testID={`mensaje-chat-${m.id || idx}`}
-                  >
-                    <View style={styles.mensajeHeader}>
-                      <Text style={[styles.emisorNombre, esMio ? styles.emisorMio : styles.emisorOtro]}>
-                        {esMio ? 'Tú' : nombreEmisor}
-                      </Text>
-                      <Text style={[styles.fechaHora, esMio && styles.fechaHoraMio]}>
-                        {formatearFechaHora(m.enviado)}
-                      </Text>
-                    </View>
-                    <Text style={[styles.mensajeTexto, esMio && styles.mensajeTextoMio]}>
-                      {m.mensaje}
+              return (
+                <View
+                  style={[
+                    styles.mensajeBubble,
+                    esMio ? styles.mensajeMio : styles.mensajeOtro
+                  ]}
+                  testID={`mensaje-chat-${m.id || idx}`}
+                >
+                  <View style={styles.mensajeHeader}>
+                    <Text style={[styles.emisorNombre, esMio ? styles.emisorMio : styles.emisorOtro]}>
+                      {esMio ? 'Tú' : nombreEmisor}
+                    </Text>
+                    <Text style={[styles.fechaHora, esMio && styles.fechaHoraMio]}>
+                      {formatDate(m.enviado)}
                     </Text>
                   </View>
-                );
-              })
-            ) : (
+                  <Text style={[styles.mensajeTexto, esMio && styles.mensajeTextoMio]}>
+                    {m.mensaje}
+                  </Text>
+                </View>
+              );
+            }}
+            ListEmptyComponent={
               <View style={styles.sinMensajesContainer}>
                 <Text style={styles.sinMensajesTexto}>
                   No hay mensajes registrados aún en esta compra. ¡Inicia la conversación!
                 </Text>
               </View>
-            )}
-          </ScrollView>
+            }
+          />
 
           {/* Alerta de Error */}
           {error ? (
@@ -199,7 +198,7 @@ export function ChatCompraModal({ compra, visible, onClose, onMensajeEnviado }) 
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -275,8 +274,6 @@ const styles = StyleSheet.create({
   },
   mensajesList: {
     flex: 1,
-    flexShrink: 1,
-    minHeight: 0,
     backgroundColor: COLORS.background
   },
   mensajesContent: {
@@ -358,8 +355,6 @@ const styles = StyleSheet.create({
     fontWeight: '600'
   },
   inputContainer: {
-    position: 'relative',
-    zIndex: 10,
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,

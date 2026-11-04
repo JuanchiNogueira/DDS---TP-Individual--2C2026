@@ -1,6 +1,8 @@
 import { Platform, NativeModules } from 'react-native';
 import Constants from 'expo-constants';
 
+const DEFAULT_TIMEOUT_MS = 15000;
+
 /**
  * Determina dinámicamente la URL base de la API:
  * 1. Variable de entorno EXPO_PUBLIC_API_URL si está configurada.
@@ -22,7 +24,6 @@ export function getBaseUrl() {
   }
 
   // 2. Dispositivo Móvil (Android / iOS) vía Expo Go
-  // En Expo Go, hostUri contiene "IP_HOST:PUERTO_METRO" (ej. "192.168.0.7:8081")
   const hostUri =
     Constants.expoConfig?.hostUri ||
     Constants.manifest2?.extra?.expoGo?.debuggerHost ||
@@ -72,30 +73,44 @@ export async function apiFetch(endpoint, options = {}) {
   }
 
   const url = `${baseUrl}${path}`;
+  const method = (options.method || 'GET').toUpperCase();
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  const isBodyAllowed = !['GET', 'HEAD'].includes(method);
 
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(options.headers || {})
-  };
-
-  const config = {
-    ...options,
-    headers
-  };
-
-  if (config.body && typeof config.body === 'object' && !(config.body instanceof FormData)) {
-    config.body = JSON.stringify(config.body);
+  const headers = { ...(options.headers || {}) };
+  if (!isFormData && isBodyAllowed && options.body !== undefined) {
+    headers['Content-Type'] = 'application/json';
   }
+
+  let body = options.body;
+  if (isBodyAllowed && body && typeof body === 'object' && !isFormData) {
+    body = JSON.stringify(body);
+  }
+
+  const controller = new AbortController();
+  const timeoutMs = options.timeout ?? DEFAULT_TIMEOUT_MS;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   let response;
   try {
-    response = await fetch(url, config);
+    response = await fetch(url, {
+      ...options,
+      headers,
+      body,
+      signal: options.signal || controller.signal
+    });
   } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error(`La petición a ${url} excedió el tiempo límite de ${timeoutMs}ms.`);
+    }
     const error = new Error(
       `No se pudo conectar con el servidor en ${baseUrl}. Verificá que el backend esté ejecutándose en el puerto 3000.`
     );
     error.cause = err;
     throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   let json = null;

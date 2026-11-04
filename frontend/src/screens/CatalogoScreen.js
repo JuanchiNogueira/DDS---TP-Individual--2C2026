@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
   View,
   Text,
@@ -12,15 +12,117 @@ import {
 } from 'react-native';
 import apiClient from '../api/apiClient';
 import { useSession } from '../context/SessionContext';
-import { COLORS, CARD_SHADOW, formatDate, formatPrice } from '../theme/colors';
+import { COLORS, CARD_SHADOW, formatDate, formatPrice, CATEGORY_EMOJIS } from '../theme/colors';
 
-const CATEGORY_EMOJIS = {
-  'Recitales': '🎸',
-  'Teatro': '🎭',
-  'Festivales': '🎪',
-  'Deportes': '⚽',
-  'Conferencias': '🎤'
-};
+const EventoCard = memo(function EventoCard({
+  item,
+  fav,
+  favoritoCargando,
+  usuarioActivo,
+  onToggleFavorito,
+  onVerDetalle
+}) {
+  const precioMin = useMemo(() => {
+    if (item.tiposEntrada && item.tiposEntrada.length > 0) {
+      return Math.min(...item.tiposEntrada.map((t) => t.precio));
+    }
+    return 0;
+  }, [item.tiposEntrada]);
+
+  const puntajeTexto =
+    item.puntajeOrganizador !== null && item.puntajeOrganizador !== undefined
+      ? `${Number(item.puntajeOrganizador).toFixed(1)} ★`
+      : 'Sin reseñas';
+  const primerImagen = item.multimedia && item.multimedia.length > 0 ? item.multimedia[0] : null;
+  const emojiCover = CATEGORY_EMOJIS[item.categoria?.nombre] || '🎟️';
+
+  return (
+    <View
+      style={styles.card}
+      testID={`evento-card-${item.id}`}
+      accessibilityLabel={`Evento ${item.nombre}`}
+    >
+      {/* Cover Header con Imagen o Emoji */}
+      <View style={styles.cardCover}>
+        {primerImagen ? (
+          <Image source={{ uri: primerImagen }} style={styles.cardCoverImage} resizeMode="cover" />
+        ) : (
+          <Text style={styles.cardCoverEmoji}>{emojiCover}</Text>
+        )}
+
+        {/* Categoría Pill */}
+        <View style={styles.categoryBadge}>
+          <Text style={styles.categoryBadgeText} testID={`evento-categoria-${item.id}`}>
+            {item.categoria?.nombre || 'General'}
+          </Text>
+        </View>
+
+        {/* Botón Favorito */}
+        <TouchableOpacity
+          style={[styles.btnFavorito, fav && styles.btnFavoritoActivo]}
+          onPress={() => onToggleFavorito(item.id)}
+          disabled={favoritoCargando || !usuarioActivo}
+          accessibilityRole="button"
+          accessibilityLabel={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+          testID={`btn-favorito-${item.id}`}
+        >
+          <Text style={[styles.btnFavoritoText, fav && styles.btnFavoritoTextActivo]}>
+            {fav ? '❤️ Favorito' : '🤍 Favorito'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Cuerpo de la Tarjeta */}
+      <View style={styles.cardBody}>
+        <Text
+          style={styles.cardTitle}
+          accessibilityRole="header"
+          testID={`evento-nombre-${item.id}`}
+          numberOfLines={2}
+        >
+          {item.nombre}
+        </Text>
+
+        <Text style={styles.cardDate} testID={`evento-fecha-${item.id}`}>
+          📅 {formatDate(item.fecha)}
+        </Text>
+
+        {item.descripcion ? (
+          <Text style={styles.cardDescription} numberOfLines={2}>
+            {item.descripcion}
+          </Text>
+        ) : null}
+
+        {/* Fila de Organizador y Precio */}
+        <View style={styles.cardRow}>
+          <Text style={styles.cardRating} testID={`evento-puntaje-${item.id}`}>
+            ⭐ {puntajeTexto}{' '}
+            <Text style={styles.cardOrganizerName}>
+              ({item.organizador?.nombre || 'Org'})
+            </Text>
+          </Text>
+
+          <View style={styles.priceTag}>
+            <Text style={styles.priceTagText} testID={`evento-precio-${item.id}`}>
+              Desde {formatPrice(precioMin)}
+            </Text>
+          </View>
+        </View>
+
+        {/* CTA Detalle */}
+        <TouchableOpacity
+          style={styles.btnDetalle}
+          onPress={() => onVerDetalle && onVerDetalle(item.id)}
+          accessibilityRole="button"
+          accessibilityLabel={`Ver detalle de ${item.nombre}`}
+          testID={`btn-ver-detalle-${item.id}`}
+        >
+          <Text style={styles.btnDetalleText}>Ver Detalle y Comprar →</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+});
 
 export function CatalogoScreen({ onVerDetalle }) {
   const { usuarioActivo, toggleFavorito, esFavorito, refreshKey } = useSession();
@@ -51,44 +153,49 @@ export function CatalogoScreen({ onVerDetalle }) {
     }
   }, []);
 
-  // Cargar Eventos con Filtros y Ordenamiento
-  const cargarEventos = useCallback(async () => {
-    try {
-      setCargandoEventos(true);
-      setError(null);
-
-      const params = {};
-      if (texto.trim()) params.texto = texto.trim();
-      if (categoriaId) params.categoriaId = categoriaId;
-      if (ordenarPor) {
-        params.ordenarPor = ordenarPor;
-        params.orden = orden;
-      }
-
-      const data = await apiClient.get('/eventos', { params });
-      setEventos(data || []);
-    } catch (err) {
-      setError(err.message || 'Error al buscar eventos');
-    } finally {
-      setCargandoEventos(false);
-    }
-  }, [texto, categoriaId, ordenarPor, orden]);
-
   // Cargar categorías al iniciar o ante reset de seed
   useEffect(() => {
     cargarCategorias();
   }, [cargarCategorias, refreshKey]);
 
-  // Debounce para búsqueda textual y cambio de filtros
+  // Debounce para búsqueda textual y cambio de filtros con cancelación de peticiones desfasadas (evita race conditions)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      cargarEventos();
+    let cancelado = false;
+    const timer = setTimeout(async () => {
+      try {
+        setCargandoEventos(true);
+        setError(null);
+
+        const params = {};
+        if (texto.trim()) params.texto = texto.trim();
+        if (categoriaId) params.categoriaId = categoriaId;
+        if (ordenarPor) {
+          params.ordenarPor = ordenarPor;
+          params.orden = orden;
+        }
+
+        const data = await apiClient.get('/eventos', { params });
+        if (!cancelado) {
+          setEventos(data || []);
+        }
+      } catch (err) {
+        if (!cancelado) {
+          setError(err.message || 'Error al buscar eventos');
+        }
+      } finally {
+        if (!cancelado) {
+          setCargandoEventos(false);
+        }
+      }
     }, 250);
 
-    return () => clearTimeout(timer);
-  }, [cargarEventos, refreshKey]);
+    return () => {
+      cancelado = true;
+      clearTimeout(timer);
+    };
+  }, [texto, categoriaId, ordenarPor, orden, refreshKey]);
 
-  const handleToggleFavorito = async (eventoId) => {
+  const handleToggleFavorito = useCallback(async (eventoId) => {
     try {
       setFavoritoCargando(eventoId);
       await toggleFavorito(eventoId);
@@ -97,116 +204,18 @@ export function CatalogoScreen({ onVerDetalle }) {
     } finally {
       setFavoritoCargando(null);
     }
-  };
+  }, [toggleFavorito]);
 
-  const calcularPrecioMinimo = (evento) => {
-    if (evento.tiposEntrada && evento.tiposEntrada.length > 0) {
-      return Math.min(...evento.tiposEntrada.map((t) => t.precio));
-    }
-    return 0;
-  };
-
-  const getEmojiForCategory = (nombre = '') => {
-    return CATEGORY_EMOJIS[nombre] || '🎟️';
-  };
-
-  const renderEventoCard = ({ item }) => {
-    const fav = esFavorito(item.id);
-    const precioMin = calcularPrecioMinimo(item);
-    const puntajeTexto =
-      item.puntajeOrganizador !== null && item.puntajeOrganizador !== undefined
-        ? `${Number(item.puntajeOrganizador).toFixed(1)} ★`
-        : 'Sin reseñas';
-    const primerImagen = item.multimedia && item.multimedia.length > 0 ? item.multimedia[0] : null;
-    const emojiCover = getEmojiForCategory(item.categoria?.nombre);
-
-    return (
-      <View
-        style={styles.card}
-        testID={`evento-card-${item.id}`}
-        accessibilityLabel={`Evento ${item.nombre}`}
-      >
-        {/* Cover Header con Imagen o Emoji */}
-        <View style={styles.cardCover}>
-          {primerImagen ? (
-            <Image source={{ uri: primerImagen }} style={styles.cardCoverImage} resizeMode="cover" />
-          ) : (
-            <Text style={styles.cardCoverEmoji}>{emojiCover}</Text>
-          )}
-
-          {/* Categoría Pill */}
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryBadgeText} testID={`evento-categoria-${item.id}`}>
-              {item.categoria?.nombre || 'General'}
-            </Text>
-          </View>
-
-          {/* Botón Favorito */}
-          <TouchableOpacity
-            style={[styles.btnFavorito, fav && styles.btnFavoritoActivo]}
-            onPress={() => handleToggleFavorito(item.id)}
-            disabled={favoritoCargando === item.id || !usuarioActivo}
-            accessibilityRole="button"
-            accessibilityLabel={fav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-            testID={`btn-favorito-${item.id}`}
-          >
-            <Text style={[styles.btnFavoritoText, fav && styles.btnFavoritoTextActivo]}>
-              {fav ? '❤️ Favorito' : '🤍 Favorito'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Cuerpo de la Tarjeta */}
-        <View style={styles.cardBody}>
-          <Text
-            style={styles.cardTitle}
-            accessibilityRole="header"
-            testID={`evento-nombre-${item.id}`}
-            numberOfLines={2}
-          >
-            {item.nombre}
-          </Text>
-
-          <Text style={styles.cardDate} testID={`evento-fecha-${item.id}`}>
-            📅 {formatDate(item.fecha)}
-          </Text>
-
-          {item.descripcion ? (
-            <Text style={styles.cardDescription} numberOfLines={2}>
-              {item.descripcion}
-            </Text>
-          ) : null}
-
-          {/* Fila de Organizador y Precio */}
-          <View style={styles.cardRow}>
-            <Text style={styles.cardRating} testID={`evento-puntaje-${item.id}`}>
-              ⭐ {puntajeTexto}{' '}
-              <Text style={styles.cardOrganizerName}>
-                ({item.organizador?.nombre || 'Org'})
-              </Text>
-            </Text>
-
-            <View style={styles.priceTag}>
-              <Text style={styles.priceTagText} testID={`evento-precio-${item.id}`}>
-                Desde {formatPrice(precioMin)}
-              </Text>
-            </View>
-          </View>
-
-          {/* CTA Detalle */}
-          <TouchableOpacity
-            style={styles.btnDetalle}
-            onPress={() => onVerDetalle && onVerDetalle(item.id)}
-            accessibilityRole="button"
-            accessibilityLabel={`Ver detalle de ${item.nombre}`}
-            testID={`btn-ver-detalle-${item.id}`}
-          >
-            <Text style={styles.btnDetalleText}>Ver Detalle y Comprar →</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
+  const renderEventoCard = useCallback(({ item }) => (
+    <EventoCard
+      item={item}
+      fav={esFavorito(item.id)}
+      favoritoCargando={favoritoCargando === item.id}
+      usuarioActivo={usuarioActivo}
+      onToggleFavorito={handleToggleFavorito}
+      onVerDetalle={onVerDetalle}
+    />
+  ), [esFavorito, favoritoCargando, usuarioActivo, handleToggleFavorito, onVerDetalle]);
 
   return (
     <View style={styles.container}>

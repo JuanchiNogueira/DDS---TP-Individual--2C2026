@@ -6,18 +6,19 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet
 } from 'react-native';
 import apiClient from '../api/apiClient';
 import { useSession } from '../context/SessionContext';
 import { COLORS, CARD_SHADOW } from '../theme/colors';
 
-let draftCounter = 0;
-const newDraft = () => ({
-  key: `draft-${++draftCounter}`,
-  nombre: '',
-  precio: '',
-  cupo: ''
+const createDraftTicket = (initial = {}) => ({
+  key: `draft-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  nombre: initial.nombre || '',
+  precio: initial.precio || '',
+  cupo: initial.cupo || ''
 });
 
 export function CrearEventoScreen({ onEventoCreado }) {
@@ -29,13 +30,12 @@ export function CrearEventoScreen({ onEventoCreado }) {
   const [multimediaUrl, setMultimediaUrl] = useState('https://images.unsplash.com/photo-1501281668745-f7f57925c3b4');
   const [descripcion, setDescripcion] = useState('');
 
-  const [tiposEntrada, setTiposEntrada] = useState([
-    {
-      key: `draft-${++draftCounter}`,
+  const [tiposEntrada, setTiposEntrada] = useState(() => [
+    createDraftTicket({
       nombre: 'Entrada General',
       precio: '5000',
       cupo: '100'
-    }
+    })
   ]);
 
   const [categorias, setCategorias] = useState([]);
@@ -52,8 +52,8 @@ export function CrearEventoScreen({ onEventoCreado }) {
         const data = await apiClient.get('/categorias');
         if (montado) {
           setCategorias(data || []);
-          if (data && data.length > 0 && !categoriaId) {
-            setCategoriaId(data[0].id);
+          if (data && data.length > 0) {
+            setCategoriaId((prev) => prev || data[0].id);
           }
         }
       } catch (err) {
@@ -73,7 +73,7 @@ export function CrearEventoScreen({ onEventoCreado }) {
   }, [refreshKey]);
 
   const agregarTipoEntrada = () => {
-    setTiposEntrada((prev) => [...prev, newDraft()]);
+    setTiposEntrada((prev) => [...prev, createDraftTicket()]);
   };
 
   const quitarTipoEntrada = (key) => {
@@ -93,12 +93,11 @@ export function CrearEventoScreen({ onEventoCreado }) {
     setMultimediaUrl('');
     setDescripcion('');
     setTiposEntrada([
-      {
-        key: `draft-${++draftCounter}`,
+      createDraftTicket({
         nombre: 'Entrada General',
         precio: '5000',
         cupo: '100'
-      }
+      })
     ]);
   };
 
@@ -214,194 +213,199 @@ export function CrearEventoScreen({ onEventoCreado }) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <View style={styles.pageHeader}>
-        <Text style={styles.pageTitle} accessibilityRole="header">
-          ➕ Publicar Nuevo Evento
-        </Text>
-        <Text style={styles.pageSubtitle}>
-          Completá los datos del evento y configurá los tipos de entrada con su cupo disponible.
-        </Text>
-      </View>
-
-      {/* Tarjeta de Información General */}
-      <View style={styles.card}>
-        <View style={styles.field}>
-          <Text style={styles.label}>Nombre del evento *</Text>
-          <TextInput
-            testID="input-evento-nombre"
-            value={nombre}
-            onChangeText={setNombre}
-            placeholder="Ej: Fito Páez en el Teatro Gran Rex"
-            placeholderTextColor={COLORS.textMuted}
-            style={styles.input}
-          />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1 }}
+    >
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <View style={styles.pageHeader}>
+          <Text style={styles.pageTitle} accessibilityRole="header">
+            ➕ Publicar Nuevo Evento
+          </Text>
+          <Text style={styles.pageSubtitle}>
+            Completá los datos del evento y configurá los tipos de entrada con su cupo disponible.
+          </Text>
         </View>
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Categoría *</Text>
-          {cargandoCategorias ? (
-            <ActivityIndicator size="small" color={COLORS.primary} />
-          ) : (
-            <View style={styles.chipsRow}>
-              {categorias.map((c) => {
-                const active = c.id === categoriaId;
-                return (
-                  <TouchableOpacity
-                    key={c.id}
-                    testID={`chip-categoria-${c.nombre?.toLowerCase()}`}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    onPress={() => setCategoriaId(c.id)}
-                    style={[styles.chip, active && styles.chipActive]}
-                  >
-                    <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                      {c.nombre}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>Fecha y hora (formato ISO) *</Text>
-          <TextInput
-            testID="input-evento-fecha"
-            value={fecha}
-            onChangeText={setFecha}
-            placeholder="2027-11-20T20:00:00.000Z"
-            placeholderTextColor={COLORS.textMuted}
-            autoCapitalize="none"
-            style={styles.input}
-          />
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>URL de imagen o multimedia</Text>
-          <TextInput
-            testID="input-evento-multimedia"
-            value={multimediaUrl}
-            onChangeText={setMultimediaUrl}
-            placeholder="https://images.unsplash.com/photo-..."
-            placeholderTextColor={COLORS.textMuted}
-            autoCapitalize="none"
-            keyboardType="url"
-            style={styles.input}
-          />
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>Descripción del evento</Text>
-          <TextInput
-            testID="input-evento-descripcion"
-            value={descripcion}
-            onChangeText={setDescripcion}
-            placeholder="Contá de qué se trata el show, horarios, accesos..."
-            placeholderTextColor={COLORS.textMuted}
-            multiline
-            numberOfLines={4}
-            style={[styles.input, styles.textarea]}
-          />
-        </View>
-      </View>
-
-      {/* Tarjeta de Tipos de Entrada */}
-      <View style={styles.card}>
-        <Text style={styles.sectionHeading} accessibilityRole="header">
-          🎫 Tipos de Entrada y Cupos
-        </Text>
-
-        {tiposEntrada.map((t, i) => (
-          <View key={t.key} testID={`tipo-entrada-form-${i}`} style={styles.ticketCard}>
-            <View style={styles.ticketHeader}>
-              <Text style={styles.ticketTitle}>Entrada #{i + 1}</Text>
-              {tiposEntrada.length > 1 && (
-                <TouchableOpacity
-                  testID={`btn-eliminar-tipo-entrada-${i}`}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Eliminar tipo de entrada ${i + 1}`}
-                  onPress={() => quitarTipoEntrada(t.key)}
-                >
-                  <Text style={styles.removeText}>🗑️ Eliminar</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
+        {/* Tarjeta de Información General */}
+        <View style={styles.card}>
+          <View style={styles.field}>
+            <Text style={styles.label}>Nombre del evento *</Text>
             <TextInput
-              testID={`input-tipo-entrada-nombre-${i}`}
-              value={t.nombre}
-              onChangeText={(v) => actualizarTipoEntrada(t.key, 'nombre', v)}
-              placeholder="Nombre (ej: General, Campo VIP)"
+              testID="input-evento-nombre"
+              value={nombre}
+              onChangeText={setNombre}
+              placeholder="Ej: Fito Páez en el Teatro Gran Rex"
               placeholderTextColor={COLORS.textMuted}
               style={styles.input}
             />
+          </View>
 
-            <View style={styles.ticketInputsRow}>
-              <View style={styles.flex}>
-                <Text style={styles.inputSublabel}>Precio ($)</Text>
-                <TextInput
-                  testID={`input-tipo-entrada-precio-${i}`}
-                  value={t.precio}
-                  onChangeText={(v) => actualizarTipoEntrada(t.key, 'precio', v)}
-                  placeholder="5000"
-                  placeholderTextColor={COLORS.textMuted}
-                  keyboardType="numeric"
-                  style={styles.input}
-                />
+          <View style={styles.field}>
+            <Text style={styles.label}>Categoría *</Text>
+            {cargandoCategorias ? (
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            ) : (
+              <View style={styles.chipsRow}>
+                {categorias.map((c) => {
+                  const active = c.id === categoriaId;
+                  return (
+                    <TouchableOpacity
+                      key={c.id}
+                      testID={`chip-categoria-${c.nombre?.toLowerCase()}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      onPress={() => setCategoriaId(c.id)}
+                      style={[styles.chip, active && styles.chipActive]}
+                    >
+                      <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                        {c.nombre}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Fecha y hora (formato ISO) *</Text>
+            <TextInput
+              testID="input-evento-fecha"
+              value={fecha}
+              onChangeText={setFecha}
+              placeholder="2027-11-20T20:00:00.000Z"
+              placeholderTextColor={COLORS.textMuted}
+              autoCapitalize="none"
+              style={styles.input}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>URL de imagen o multimedia</Text>
+            <TextInput
+              testID="input-evento-multimedia"
+              value={multimediaUrl}
+              onChangeText={setMultimediaUrl}
+              placeholder="https://images.unsplash.com/photo-..."
+              placeholderTextColor={COLORS.textMuted}
+              autoCapitalize="none"
+              keyboardType="url"
+              style={styles.input}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Descripción del evento</Text>
+            <TextInput
+              testID="input-evento-descripcion"
+              value={descripcion}
+              onChangeText={setDescripcion}
+              placeholder="Contá de qué se trata el show, horarios, accesos..."
+              placeholderTextColor={COLORS.textMuted}
+              multiline
+              numberOfLines={4}
+              style={[styles.input, styles.textarea]}
+            />
+          </View>
+        </View>
+
+        {/* Tarjeta de Tipos de Entrada */}
+        <View style={styles.card}>
+          <Text style={styles.sectionHeading} accessibilityRole="header">
+            🎫 Tipos de Entrada y Cupos
+          </Text>
+
+          {tiposEntrada.map((t, i) => (
+            <View key={t.key} testID={`tipo-entrada-form-${i}`} style={styles.ticketCard}>
+              <View style={styles.ticketHeader}>
+                <Text style={styles.ticketTitle}>Entrada #{i + 1}</Text>
+                {tiposEntrada.length > 1 && (
+                  <TouchableOpacity
+                    testID={`btn-eliminar-tipo-entrada-${i}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Eliminar tipo de entrada ${i + 1}`}
+                    onPress={() => quitarTipoEntrada(t.key)}
+                  >
+                    <Text style={styles.removeText}>🗑️ Eliminar</Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
-              <View style={styles.flex}>
-                <Text style={styles.inputSublabel}>Cupo disponible</Text>
-                <TextInput
-                  testID={`input-tipo-entrada-cupo-${i}`}
-                  value={t.cupo}
-                  onChangeText={(v) => actualizarTipoEntrada(t.key, 'cupo', v)}
-                  placeholder="100"
-                  placeholderTextColor={COLORS.textMuted}
-                  keyboardType="number-pad"
-                  style={styles.input}
-                />
+              <TextInput
+                testID={`input-tipo-entrada-nombre-${i}`}
+                value={t.nombre}
+                onChangeText={(v) => actualizarTipoEntrada(t.key, 'nombre', v)}
+                placeholder="Nombre (ej: General, Campo VIP)"
+                placeholderTextColor={COLORS.textMuted}
+                style={styles.input}
+              />
+
+              <View style={styles.ticketInputsRow}>
+                <View style={styles.flex}>
+                  <Text style={styles.inputSublabel}>Precio ($)</Text>
+                  <TextInput
+                    testID={`input-tipo-entrada-precio-${i}`}
+                    value={t.precio}
+                    onChangeText={(v) => actualizarTipoEntrada(t.key, 'precio', v)}
+                    placeholder="5000"
+                    placeholderTextColor={COLORS.textMuted}
+                    keyboardType="numeric"
+                    style={styles.input}
+                  />
+                </View>
+
+                <View style={styles.flex}>
+                  <Text style={styles.inputSublabel}>Cupo disponible</Text>
+                  <TextInput
+                    testID={`input-tipo-entrada-cupo-${i}`}
+                    value={t.cupo}
+                    onChangeText={(v) => actualizarTipoEntrada(t.key, 'cupo', v)}
+                    placeholder="100"
+                    placeholderTextColor={COLORS.textMuted}
+                    keyboardType="number-pad"
+                    style={styles.input}
+                  />
+                </View>
               </View>
             </View>
-          </View>
-        ))}
+          ))}
 
-        <TouchableOpacity
-          testID="btn-agregar-tipo-entrada"
-          accessibilityRole="button"
-          accessibilityLabel="Agregar otro tipo de entrada"
-          onPress={agregarTipoEntrada}
-          style={styles.addTicketBtn}
-        >
-          <Text style={styles.addTicketBtnText}>+ Agregar otro tipo de entrada</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Alerta de Error */}
-      {error ? (
-        <View testID="alerta-error-crear-evento" style={styles.errorAlert} accessibilityRole="alert">
-          <Text style={styles.errorText}>⚠️ {error}</Text>
+          <TouchableOpacity
+            testID="btn-agregar-tipo-entrada"
+            accessibilityRole="button"
+            accessibilityLabel="Agregar otro tipo de entrada"
+            onPress={agregarTipoEntrada}
+            style={styles.addTicketBtn}
+          >
+            <Text style={styles.addTicketBtnText}>+ Agregar otro tipo de entrada</Text>
+          </TouchableOpacity>
         </View>
-      ) : null}
 
-      {/* Botón Publicar */}
-      <TouchableOpacity
-        testID="btn-publicar-evento"
-        accessibilityRole="button"
-        accessibilityLabel="Publicar evento"
-        onPress={handlePublicar}
-        disabled={publicando}
-        style={[styles.publishButton, publicando && styles.publishButtonDisabled]}
-      >
-        {publicando ? (
-          <ActivityIndicator size="small" color="#FFFFFF" />
-        ) : (
-          <Text style={styles.publishButtonText}>🚀 Publicar Evento</Text>
-        )}
-      </TouchableOpacity>
-    </ScrollView>
+        {/* Alerta de Error */}
+        {error ? (
+          <View testID="alerta-error-crear-evento" style={styles.errorAlert} accessibilityRole="alert">
+            <Text style={styles.errorText}>⚠️ {error}</Text>
+          </View>
+        ) : null}
+
+        {/* Botón Publicar */}
+        <TouchableOpacity
+          testID="btn-publicar-evento"
+          accessibilityRole="button"
+          accessibilityLabel="Publicar evento"
+          onPress={handlePublicar}
+          disabled={publicando}
+          style={[styles.publishButton, publicando && styles.publishButtonDisabled]}
+        >
+          {publicando ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.publishButtonText}>🚀 Publicar Evento</Text>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

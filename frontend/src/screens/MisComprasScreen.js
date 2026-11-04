@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import apiClient from '../api/apiClient';
 import { useSession } from '../context/SessionContext';
 import ChatCompraModal from '../components/ChatCompraModal';
 import ReseniaModal from '../components/ReseniaModal';
-import { COLORS, CARD_SHADOW, formatDate, formatPrice } from '../theme/colors';
+import { COLORS, CARD_SHADOW, formatDate } from '../theme/colors';
 
 export function MisComprasScreen() {
   const { usuarioActivo, refreshKey } = useSession();
@@ -28,6 +28,22 @@ export function MisComprasScreen() {
 
   const [compraResenia, setCompraResenia] = useState(null);
   const [modalReseniaVisible, setModalReseniaVisible] = useState(false);
+
+  const exitoTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (exitoTimerRef.current) {
+        clearTimeout(exitoTimerRef.current);
+      }
+    };
+  }, []);
+
+  const mostrarMensajeExito = (msg) => {
+    if (exitoTimerRef.current) clearTimeout(exitoTimerRef.current);
+    setMensajeExito(msg);
+    exitoTimerRef.current = setTimeout(() => setMensajeExito(null), 5000);
+  };
 
   const cargarCompras = useCallback(async () => {
     if (!usuarioActivo?.id) {
@@ -55,16 +71,13 @@ export function MisComprasScreen() {
   const handleCancelarCompra = async (compraId) => {
     try {
       setCancelandoId(compraId);
-      setMensajeExito(null);
       setError(null);
 
       await apiClient.post(`/compras/${compraId}/cancelar`, {
         usuarioId: usuarioActivo.id
       });
 
-      setMensajeExito('Compra cancelada y reembolsada con éxito. Cupo restituido.');
-      setTimeout(() => setMensajeExito(null), 5000);
-
+      mostrarMensajeExito('Compra cancelada y reembolsada con éxito. Cupo restituido.');
       await cargarCompras();
     } catch (err) {
       setError(err.message || 'Error al cancelar la compra');
@@ -85,8 +98,7 @@ export function MisComprasScreen() {
   };
 
   const handleReseniaPublicada = async () => {
-    setMensajeExito(`¡Reseña publicada con éxito para "${compraResenia?.evento?.nombre}"!`);
-    setTimeout(() => setMensajeExito(null), 5000);
+    mostrarMensajeExito(`¡Reseña publicada con éxito para "${compraResenia?.evento?.nombre}"!`);
     await cargarCompras();
   };
 

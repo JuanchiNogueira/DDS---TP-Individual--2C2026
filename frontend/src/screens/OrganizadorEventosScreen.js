@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,8 @@ const STATUS_STYLE = {
   REEMBOLSADA: { bg: '#F1F5F9', fg: COLORS.textMuted }
 };
 
+const FILTROS = ['TODOS', 'CONFIRMADA', 'PENDIENTE', 'UTILIZADA', 'CANCELADA', 'REEMBOLSADA'];
+
 export function OrganizadorEventosScreen({ onCrearEvento }) {
   const { usuarioActivo, refreshKey } = useSession();
 
@@ -40,6 +42,22 @@ export function OrganizadorEventosScreen({ onCrearEvento }) {
   // Modal de Chat
   const [compraChat, setCompraChat] = useState(null);
   const [modalChatVisible, setModalChatVisible] = useState(false);
+
+  const exitoTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (exitoTimerRef.current) {
+        clearTimeout(exitoTimerRef.current);
+      }
+    };
+  }, []);
+
+  const mostrarMensajeExito = (msg) => {
+    if (exitoTimerRef.current) clearTimeout(exitoTimerRef.current);
+    setMensajeExito(msg);
+    exitoTimerRef.current = setTimeout(() => setMensajeExito(null), 4000);
+  };
 
   // Cargar eventos del organizador
   const cargarEventos = useCallback(async () => {
@@ -94,15 +112,13 @@ export function OrganizadorEventosScreen({ onCrearEvento }) {
     try {
       setMarcandoId(compraId);
       setErrorDetalle(null);
-      setMensajeExito(null);
 
       await apiClient.patch(`/compras/${compraId}/estado`, {
         estado: 'UTILIZADA',
         usuarioId: usuarioActivo.id
       });
 
-      setMensajeExito('Entrada marcada como UTILIZADA con éxito.');
-      setTimeout(() => setMensajeExito(null), 4000);
+      mostrarMensajeExito('Entrada marcada como UTILIZADA con éxito.');
 
       // Recargar datos de compras y cupos del evento
       if (eventoSeleccionado) {
@@ -131,21 +147,26 @@ export function OrganizadorEventosScreen({ onCrearEvento }) {
     }
   };
 
+  const comprasLista = useMemo(() => detalleCompras?.compras || [], [detalleCompras?.compras]);
+  const entradasDisponibles = useMemo(() => detalleCompras?.entradasDisponibles || [], [detalleCompras?.entradasDisponibles]);
+
+  const conteosPorEstado = useMemo(() => {
+    const counts = { TODOS: comprasLista.length };
+    for (const compra of comprasLista) {
+      counts[compra.estado] = (counts[compra.estado] || 0) + 1;
+    }
+    return counts;
+  }, [comprasLista]);
+
+  const comprasFiltradas = useMemo(() => {
+    if (filtroEstado === 'TODOS') return comprasLista;
+    return comprasLista.filter((c) => c.estado === filtroEstado);
+  }, [comprasLista, filtroEstado]);
+
   // ==========================================
   // VISTA 2: DETALLE DE COMPRAS Y GESTIÓN DE CUPOS
   // ==========================================
   if (eventoSeleccionado) {
-    const comprasLista = detalleCompras?.compras || [];
-    const entradasDisponibles = detalleCompras?.entradasDisponibles || [];
-    const comprasFiltradas =
-      filtroEstado === 'TODOS'
-        ? comprasLista
-        : comprasLista.filter((c) => c.estado === filtroEstado);
-
-    const filtros = ['TODOS', 'CONFIRMADA', 'PENDIENTE', 'UTILIZADA', 'CANCELADA', 'REEMBOLSADA'];
-    const countFor = (st) =>
-      st === 'TODOS' ? comprasLista.length : comprasLista.filter((c) => c.estado === st).length;
-
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.detailContainer}>
@@ -251,8 +272,9 @@ export function OrganizadorEventosScreen({ onCrearEvento }) {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.filtersScroll}
                 >
-                  {filtros.map((st) => {
+                  {FILTROS.map((st) => {
                     const activo = filtroEstado === st;
+                    const cantidad = conteosPorEstado[st] || 0;
                     return (
                       <TouchableOpacity
                         key={st}
@@ -263,7 +285,7 @@ export function OrganizadorEventosScreen({ onCrearEvento }) {
                         style={[styles.filterChip, activo && styles.filterChipActive]}
                       >
                         <Text style={[styles.filterChipText, activo && styles.filterChipTextActive]}>
-                          {st} ({countFor(st)})
+                          {st} ({cantidad})
                         </Text>
                       </TouchableOpacity>
                     );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -21,17 +21,28 @@ export function HeaderBar({ pantallaActual, onNavegar }) {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [reiniciando, setReiniciando] = useState(false);
   const [mensajeSeed, setMensajeSeed] = useState('');
+  const seedTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (seedTimerRef.current) {
+        clearTimeout(seedTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleReiniciarSeed = async () => {
     try {
       setReiniciando(true);
       setMensajeSeed('');
+      if (seedTimerRef.current) clearTimeout(seedTimerRef.current);
+
       await reiniciarDatos();
       setMensajeSeed('¡Datos reiniciados!');
-      setTimeout(() => setMensajeSeed(''), 3000);
+      seedTimerRef.current = setTimeout(() => setMensajeSeed(''), 3000);
     } catch {
       setMensajeSeed('Error al reiniciar datos');
-      setTimeout(() => setMensajeSeed(''), 3000);
+      seedTimerRef.current = setTimeout(() => setMensajeSeed(''), 3000);
     } finally {
       setReiniciando(false);
     }
@@ -46,12 +57,14 @@ export function HeaderBar({ pantallaActual, onNavegar }) {
     ? `${usuarioActivo.nombre || ''} ${usuarioActivo.apellido || ''}`.trim() || usuarioActivo.id
     : 'Usuario';
 
-  const iniciales = nombreUsuario
-    .split(' ')
-    .map((w) => w.charAt(0))
-    .join('')
-    .slice(0, 2)
-    .toUpperCase() || 'U';
+  const iniciales =
+    nombreUsuario
+      .split(' ')
+      .filter(Boolean)
+      .map((w) => w.charAt(0))
+      .join('')
+      .slice(0, 2)
+      .toUpperCase() || 'U';
 
   const esComprador = modo === 'COMPRADOR';
 
@@ -82,7 +95,7 @@ export function HeaderBar({ pantallaActual, onNavegar }) {
           </View>
         </View>
 
-        {/* Avatar sutil del usuario a la derecha (abre también el menú) */}
+        {/* Avatar sutil del usuario a la derecha */}
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel={`Menú de ${nombreUsuario}`}
@@ -269,7 +282,7 @@ export function HeaderBar({ pantallaActual, onNavegar }) {
               </TouchableOpacity>
             </ScrollView>
 
-            {/* Footer del Drawer: Único botón de Cerrar Sesión */}
+            {/* Footer del Drawer */}
             <View style={styles.drawerFooter}>
               <TouchableOpacity
                 testID="btn-header-landing"

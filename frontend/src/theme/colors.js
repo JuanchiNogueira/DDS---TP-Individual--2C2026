@@ -29,11 +29,20 @@ export const CARD_SHADOW = {
   elevation: 2
 };
 
+export const CATEGORY_EMOJIS = {
+  'Recitales': '🎸',
+  'Teatro': '🎭',
+  'Festivales': '🎪',
+  'Deportes': '⚽',
+  'Conferencias': '🎤'
+};
+
 export function formatPrice(value = 0) {
   return `$${value}`;
 }
 
 export function formatDate(iso) {
+  if (!iso) return '';
   try {
     const date = new Date(iso);
     if (isNaN(date.getTime())) return String(iso);
@@ -54,12 +63,12 @@ export function formatDate(iso) {
 }
 
 export function daysUntil(iso) {
-  try {
-    const ms = new Date(iso).getTime() - Date.now();
-    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
-  } catch {
-    return 0;
-  }
+  if (!iso) return 0;
+  const date = new Date(iso);
+  const time = date.getTime();
+  if (isNaN(time)) return 0;
+  const ms = time - Date.now();
+  return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
 }
 
 export const DEMO_ACCOUNTS = [

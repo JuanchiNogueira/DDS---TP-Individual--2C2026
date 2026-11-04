@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,22 +12,17 @@ import {
 } from 'react-native';
 import apiClient from '../api/apiClient';
 import { useSession } from '../context/SessionContext';
-import { COLORS, CARD_SHADOW, formatDate, formatPrice } from '../theme/colors';
-
-const CATEGORY_EMOJIS = {
-  'Recitales': '🎸',
-  'Teatro': '🎭',
-  'Festivales': '🎪',
-  'Deportes': '⚽',
-  'Conferencias': '🎤'
-};
+import { COLORS, CARD_SHADOW, formatDate, formatPrice, CATEGORY_EMOJIS } from '../theme/colors';
 
 function Stars({ value = 0 }) {
   const rounded = Math.round(Number(value) || 0);
+  const activeStars = Math.max(0, Math.min(5, rounded));
+  const offStars = Math.max(0, 5 - activeStars);
+
   return (
     <Text style={styles.starsText} accessibilityLabel={`${value} de 5 estrellas`}>
-      {'⭐'.repeat(Math.max(0, Math.min(5, rounded)))}
-      <Text style={styles.starsOff}>{'⭐'.repeat(Math.max(0, 5 - rounded))}</Text>
+      {'★'.repeat(activeStars)}
+      <Text style={styles.starsOff}>{'☆'.repeat(offStars)}</Text>
     </Text>
   );
 }
@@ -44,6 +39,13 @@ export function DetalleEventoScreen({ eventoId, onVolver, onIrAMisCompras }) {
   const [comprando, setComprando] = useState(false);
   const [errorCompra, setErrorCompra] = useState(null);
   const [exitoCompra, setExitoCompra] = useState(null);
+
+  const evento = detalle?.evento || detalle;
+  const puntajeOrganizador = detalle?.puntajeOrganizador;
+  const resenias = detalle?.resenias;
+  const tiposEntrada = useMemo(() => {
+    return detalle?.tiposEntrada || evento?.tiposEntrada || [];
+  }, [detalle?.tiposEntrada, evento?.tiposEntrada]);
 
   const cargarDetalle = useCallback(async () => {
     if (!eventoId) return;
@@ -77,7 +79,7 @@ export function DetalleEventoScreen({ eventoId, onVolver, onIrAMisCompras }) {
   const updateQuantity = (next) => {
     if (!Number.isFinite(next)) return;
     const maxCupo = tipoEntradaSeleccionado?.cupo ?? 999;
-    const clamped = Math.max(1, Math.min(maxCupo, Math.floor(next)));
+    const clamped = Math.max(1, Math.min(Math.max(1, maxCupo), Math.floor(next)));
     setCantidad(String(clamped));
   };
 
@@ -156,8 +158,6 @@ export function DetalleEventoScreen({ eventoId, onVolver, onIrAMisCompras }) {
     );
   }
 
-  const { evento, puntajeOrganizador, resenias } = detalle;
-  const tiposEntrada = detalle.tiposEntrada || evento?.tiposEntrada || [];
   const puntajeTexto =
     puntajeOrganizador !== null && puntajeOrganizador !== undefined
       ? `${Number(puntajeOrganizador).toFixed(1)} ★`
@@ -274,7 +274,7 @@ export function DetalleEventoScreen({ eventoId, onVolver, onIrAMisCompras }) {
           {resenias && resenias.length > 0 ? (
             resenias.map((r, idx) => (
               <View
-                key={r.id || idx}
+                key={r.id || `resenia-${idx}`}
                 style={styles.reviewCard}
                 testID={`resenia-item-${r.id || idx}`}
               >
@@ -615,11 +615,12 @@ const styles = StyleSheet.create({
     marginTop: 2
   },
   starsText: {
-    fontSize: 12,
+    fontSize: 14,
+    color: COLORS.gold,
     letterSpacing: 1
   },
   starsOff: {
-    opacity: 0.2
+    color: COLORS.inputBorder
   },
   section: {
     gap: 10

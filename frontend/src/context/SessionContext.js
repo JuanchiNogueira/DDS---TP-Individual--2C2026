@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import apiClient from '../api/apiClient';
 
 export const SessionContext = createContext(null);
@@ -11,23 +11,42 @@ export function SessionProvider({ children }) {
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const sincronizarUsuarioPorModo = useCallback((nuevoModo, usuarioBase, listaUsuarios) => {
+    const esOrg = nuevoModo === 'ORGANIZADOR';
+    const cumpleModo = esOrg
+      ? usuarioBase?.id?.startsWith('usr-org')
+      : usuarioBase?.id?.startsWith('usr-comp');
+
+    if (cumpleModo) return usuarioBase;
+
+    if (esOrg) {
+      return listaUsuarios.find((u) => u.id?.startsWith('usr-org')) || usuarioBase;
+    }
+    return (
+      listaUsuarios.find((u) => u.id === 'usr-comp-1') ||
+      listaUsuarios.find((u) => u.id?.startsWith('usr-comp')) ||
+      usuarioBase
+    );
+  }, []);
+
   const cargarUsuarios = useCallback(async (mantenerSeleccion = true) => {
     try {
       setCargando(true);
       setError(null);
       const lista = await apiClient.get('/usuarios');
-      setUsuarios(lista);
+      setUsuarios(lista || []);
 
       setUsuarioActivo((prev) => {
         if (mantenerSeleccion && prev) {
-          const encontrado = lista.find((u) => u.id === prev.id);
+          const encontrado = (lista || []).find((u) => u.id === prev.id);
           if (encontrado) return encontrado;
+          return prev;
         }
         // Seleccionar por defecto al primer comprador ('usr-comp-1')
         const compradorDefault =
-          lista.find((u) => u.id === 'usr-comp-1') ||
-          lista.find((u) => u.id?.startsWith('usr-comp')) ||
-          lista[0] ||
+          (lista || []).find((u) => u.id === 'usr-comp-1') ||
+          (lista || []).find((u) => u.id?.startsWith('usr-comp')) ||
+          (lista || [])[0] ||
           null;
         return compradorDefault;
       });
@@ -42,41 +61,27 @@ export function SessionProvider({ children }) {
     cargarUsuarios(false);
   }, [cargarUsuarios]);
 
-  const cambiarUsuario = (usuarioId) => {
+  const cambiarUsuario = useCallback((usuarioId) => {
     const user = usuarios.find((u) => u.id === usuarioId);
     if (user) {
       setUsuarioActivo(user);
     }
-  };
+  }, [usuarios]);
 
-  const alternarModo = () => {
+  const seleccionarModo = useCallback((nuevoModo) => {
+    setModo(nuevoModo);
+    setUsuarioActivo((prev) => sincronizarUsuarioPorModo(nuevoModo, prev, usuarios));
+  }, [usuarios, sincronizarUsuarioPorModo]);
+
+  const alternarModo = useCallback(() => {
     setModo((prevModo) => {
       const nuevoModo = prevModo === 'COMPRADOR' ? 'ORGANIZADOR' : 'COMPRADOR';
-      // Si cambia a organizador y el usuario actual no es organizador, seleccionar el primer organizador
-      if (nuevoModo === 'ORGANIZADOR' && !usuarioActivo?.id?.startsWith('usr-org')) {
-        const org = usuarios.find((u) => u.id?.startsWith('usr-org'));
-        if (org) setUsuarioActivo(org);
-      } else if (nuevoModo === 'COMPRADOR' && !usuarioActivo?.id?.startsWith('usr-comp')) {
-        const comp = usuarios.find((u) => u.id === 'usr-comp-1') || usuarios.find((u) => u.id?.startsWith('usr-comp'));
-        if (comp) setUsuarioActivo(comp);
-      }
+      setUsuarioActivo((prev) => sincronizarUsuarioPorModo(nuevoModo, prev, usuarios));
       return nuevoModo;
     });
-  };
+  }, [usuarios, sincronizarUsuarioPorModo]);
 
-  const seleccionarModo = (nuevoModo) => {
-    if (nuevoModo === modo) return;
-    setModo(nuevoModo);
-    if (nuevoModo === 'ORGANIZADOR' && !usuarioActivo?.id?.startsWith('usr-org')) {
-      const org = usuarios.find((u) => u.id?.startsWith('usr-org'));
-      if (org) setUsuarioActivo(org);
-    } else if (nuevoModo === 'COMPRADOR' && !usuarioActivo?.id?.startsWith('usr-comp')) {
-      const comp = usuarios.find((u) => u.id === 'usr-comp-1') || usuarios.find((u) => u.id?.startsWith('usr-comp'));
-      if (comp) setUsuarioActivo(comp);
-    }
-  };
-
-  const iniciarSesion = (identificador) => {
+  const iniciarSesion = useCallback((identificador) => {
     const idTrim = (identificador || '').trim();
     const esOrg = idTrim.toLowerCase().startsWith('usr-org');
     const nuevoModo = esOrg ? 'ORGANIZADOR' : 'COMPRADOR';
@@ -94,9 +99,9 @@ export function SessionProvider({ children }) {
     setUsuarioActivo(user);
     setModo(nuevoModo);
     return { user, modo: nuevoModo };
-  };
+  }, [usuarios]);
 
-  const reiniciarDatos = async () => {
+  const reiniciarDatos = useCallback(async () => {
     try {
       setCargando(true);
       setError(null);
@@ -110,9 +115,9 @@ export function SessionProvider({ children }) {
     } finally {
       setCargando(false);
     }
-  };
+  }, [cargarUsuarios]);
 
-  const toggleFavorito = async (eventoId) => {
+  const toggleFavorito = useCallback(async (eventoId) => {
     if (!usuarioActivo) return;
     try {
       const usuarioActualizado = await apiClient.post(`/usuarios/${usuarioActivo.id}/favoritos`, {
@@ -127,14 +132,14 @@ export function SessionProvider({ children }) {
       setError(err.message || 'Error al alternar favorito');
       throw err;
     }
-  };
+  }, [usuarioActivo]);
 
-  const esFavorito = (eventoId) => {
+  const esFavorito = useCallback((eventoId) => {
     if (!usuarioActivo?.favoritos) return false;
-    return usuarioActivo.favoritos.some((fav) => fav.id === eventoId || fav === eventoId);
-  };
+    return usuarioActivo.favoritos.some((fav) => fav?.id === eventoId || fav === eventoId);
+  }, [usuarioActivo]);
 
-  const value = {
+  const value = useMemo(() => ({
     usuarios,
     usuarioActivo,
     setUsuarioActivo,
@@ -149,7 +154,21 @@ export function SessionProvider({ children }) {
     cargando,
     error,
     refreshKey
-  };
+  }), [
+    usuarios,
+    usuarioActivo,
+    cambiarUsuario,
+    iniciarSesion,
+    modo,
+    seleccionarModo,
+    alternarModo,
+    reiniciarDatos,
+    toggleFavorito,
+    esFavorito,
+    cargando,
+    error,
+    refreshKey
+  ]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
