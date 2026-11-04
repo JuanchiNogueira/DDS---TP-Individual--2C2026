@@ -305,3 +305,30 @@ test('Test 5: Flujo de Landing Page e Inicio de Sesión Inteligente', async ({ p
   await page.getByTestId('btn-menu-hamburguesa').click();
   await expect(page.getByTestId('nav-org-eventos')).toBeVisible();
 });
+
+test('Test 6: Navegación a Mi Perfil desde Avatar y Menú Hamburguesa', async ({ page }) => {
+  // 1. PREPARAR
+  // El test arranca en el catálogo como comprador activo
+
+  // 2. ACTUAR: Tocar el avatar en la cabecera superior derecha
+  const btnAvatar = page.getByTestId('btn-header-avatar-perfil');
+  await expect(btnAvatar).toBeVisible();
+  await btnAvatar.click();
+
+  // 3. VERIFICAR: Se visualiza la pantalla Mi Perfil con sus datos
+  await expect(page.getByTestId('pantalla-mi-perfil')).toBeVisible();
+  await expect(page.getByTestId('perfil-nombre-usuario')).toBeVisible();
+  await expect(page.getByTestId('perfil-rol-usuario')).toContainText('COMPRADOR');
+
+  // Probar botón Volver
+  await page.getByTestId('btn-perfil-volver').click();
+  await expect(page.getByTestId('input-buscar-evento')).toBeVisible();
+
+  // Probar navegación a Mi Perfil desde el menú hamburguesa
+  await page.getByTestId('btn-menu-hamburguesa').click();
+  const navPerfil = page.getByTestId('nav-mi-perfil');
+  await expect(navPerfil).toBeVisible();
+  await navPerfil.click();
+
+  await expect(page.getByTestId('pantalla-mi-perfil')).toBeVisible();
+});

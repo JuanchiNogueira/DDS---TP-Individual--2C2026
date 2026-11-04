@@ -9,15 +9,16 @@ import DetalleEventoScreen from './src/screens/DetalleEventoScreen';
 import MisComprasScreen from './src/screens/MisComprasScreen';
 import OrganizadorEventosScreen from './src/screens/OrganizadorEventosScreen';
 import CrearEventoScreen from './src/screens/CrearEventoScreen';
+import MiPerfilScreen from './src/screens/MiPerfilScreen';
 
 function MainApp() {
   const { modo, iniciarSesion } = useSession();
-  const [pantalla, setPantalla] = useState('landing'); // 'landing' | 'catalogo' | 'detalle' | 'mis-compras' | 'org-eventos' | 'org-crear-evento'
+  const [pantalla, setPantalla] = useState('landing'); // 'landing' | 'catalogo' | 'detalle' | 'mis-compras' | 'org-eventos' | 'org-crear-evento' | 'perfil'
   const [eventoDetalleId, setEventoDetalleId] = useState(null);
 
   // Sincronizar pantalla cuando se cambia el modo (Comprador vs Organizador)
   useEffect(() => {
-    if (pantalla === 'landing') return;
+    if (pantalla === 'landing' || pantalla === 'perfil') return;
     if (modo === 'ORGANIZADOR') {
       if (pantalla === 'catalogo' || pantalla === 'detalle' || pantalla === 'mis-compras') {
         setPantalla('org-eventos');
@@ -63,6 +64,8 @@ function MainApp() {
               onLogin={handleLogin}
               onExplorarCatalogo={() => handleNavegar('catalogo')}
             />
+          ) : pantalla === 'perfil' ? (
+            <MiPerfilScreen onNavegar={handleNavegar} />
           ) : modo === 'ORGANIZADOR' ? (
             <>
               {pantalla === 'org-eventos' || pantalla === 'org-detalle' ? (

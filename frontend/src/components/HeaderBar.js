@@ -95,11 +95,12 @@ export function HeaderBar({ pantallaActual, onNavegar }) {
           </View>
         </View>
 
-        {/* Avatar sutil del usuario a la derecha */}
+        {/* Avatar sutil del usuario a la derecha (lleva a Mi Perfil) */}
         <TouchableOpacity
+          testID="btn-header-avatar-perfil"
           accessibilityRole="button"
-          accessibilityLabel={`Menú de ${nombreUsuario}`}
-          onPress={() => setMenuAbierto(true)}
+          accessibilityLabel={`Mi Perfil - ${nombreUsuario}`}
+          onPress={() => onNavegar('perfil')}
           style={[styles.topAvatar, esComprador ? styles.drawerAvatarComp : styles.drawerAvatarOrg]}
         >
           <Text style={[styles.topAvatarText, esComprador ? styles.drawerAvatarTextComp : styles.drawerAvatarTextOrg]}>
@@ -134,7 +135,12 @@ export function HeaderBar({ pantallaActual, onNavegar }) {
           <View style={styles.drawerPanel}>
             {/* Cabecera del Drawer */}
             <View style={styles.drawerHeader}>
-              <View style={styles.drawerUserRow}>
+              <TouchableOpacity
+                style={styles.drawerUserRow}
+                onPress={() => handleNavegarYSalirMenu('perfil')}
+                accessibilityRole="button"
+                accessibilityLabel="Ver Mi Perfil"
+              >
                 <View style={[styles.drawerAvatar, esComprador ? styles.drawerAvatarComp : styles.drawerAvatarOrg]}>
                   <Text style={[styles.drawerAvatarText, esComprador ? styles.drawerAvatarTextComp : styles.drawerAvatarTextOrg]}>
                     {iniciales}
@@ -150,7 +156,7 @@ export function HeaderBar({ pantallaActual, onNavegar }) {
                     </Text>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 testID="btn-cerrar-drawer"
@@ -166,6 +172,29 @@ export function HeaderBar({ pantallaActual, onNavegar }) {
             {/* Opciones de Navegación */}
             <ScrollView contentContainerStyle={styles.drawerContent}>
               <Text style={styles.sectionHeader}>NAVEGACIÓN</Text>
+
+              {/* Opción Mi Perfil (disponible para Comprador y Organizador) */}
+              <TouchableOpacity
+                testID="nav-mi-perfil"
+                accessibilityRole="button"
+                accessibilityLabel="Ir a Mi Perfil"
+                onPress={() => handleNavegarYSalirMenu('perfil')}
+                style={[
+                  styles.drawerItem,
+                  pantallaActual === 'perfil' && (esComprador ? styles.drawerItemActive : styles.drawerItemActiveOrg)
+                ]}
+              >
+                <Text style={styles.drawerItemIcon}>👤</Text>
+                <Text
+                  style={[
+                    styles.drawerItemText,
+                    pantallaActual === 'perfil' && (esComprador ? styles.drawerItemTextActive : styles.drawerItemTextActiveOrg)
+                  ]}
+                >
+                  Mi Perfil
+                </Text>
+                <Text style={styles.drawerChevron}>›</Text>
+              </TouchableOpacity>
 
               {esComprador ? (
                 <>
