@@ -1,6 +1,7 @@
 import { compraRepository as defaultCompraRepository } from '../repositories/CompraRepository.js';
 import { usuarioRepository as defaultUsuarioRepository } from '../repositories/UsuarioRepository.js';
 import { eventoRepository as defaultEventoRepository } from '../repositories/EventoRepository.js';
+import { reseniaRepository as defaultReseniaRepository } from '../repositories/ReseniaRepository.js';
 
 import { Compra } from '../domain/Compra.js';
 import { EstadoCompra } from '../domain/EstadoCompra.js';
@@ -10,11 +11,13 @@ export class CompraService {
   constructor({
     compraRepository = defaultCompraRepository,
     usuarioRepository = defaultUsuarioRepository,
-    eventoRepository = defaultEventoRepository
+    eventoRepository = defaultEventoRepository,
+    reseniaRepository = defaultReseniaRepository
   } = {}) {
     this.compraRepository = compraRepository;
     this.usuarioRepository = usuarioRepository;
     this.eventoRepository = eventoRepository;
+    this.reseniaRepository = reseniaRepository;
   }
 
   async realizarCompra({
@@ -55,6 +58,9 @@ export class CompraService {
     }
 
     const compras = await this.compraRepository.buscarPorComprador(compradorId);
+    const reseniasComprador = this.reseniaRepository?.buscarPorComprador
+      ? await this.reseniaRepository.buscarPorComprador(compradorId)
+      : [];
 
     return compras.map((compra) => {
       let diasFaltantes = null;
@@ -62,6 +68,15 @@ export class CompraService {
         diasFaltantes = compra.calcularDiasFaltantes();
       }
       compra.diasFaltantes = diasFaltantes;
+
+      const reseniaAsociada = reseniasComprador.find(
+        (r) =>
+          (r.compraId && r.compraId === compra.id) ||
+          (r.evento?.id === compra.evento?.id)
+      );
+
+      const yaCalificada = Boolean(reseniaAsociada);
+
       return {
         compra,
         id: compra.id,
@@ -72,7 +87,15 @@ export class CompraService {
         estado: compra.estado,
         mensajes: compra.mensajes,
         historialEstados: compra.historialEstados,
-        diasFaltantes
+        diasFaltantes,
+        yaCalificada,
+        resenia: reseniaAsociada
+          ? {
+              id: reseniaAsociada.id,
+              puntuacion: reseniaAsociada.puntuacion,
+              detalle: reseniaAsociada.detalle
+            }
+          : null
       };
     });
   }

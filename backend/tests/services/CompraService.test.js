@@ -199,6 +199,63 @@ describe('CompraService Unit Tests with Mocks', () => {
       expect(resultado[1].diasFaltantes).toBeNull();
     });
 
+    test('debe identificar compras ya calificadas con yaCalificada y adjuntar la reseña', async () => {
+      // Arrange
+      const mockReseniaRepo = {
+        buscarPorComprador: jest.fn()
+      };
+      const serviceConResenias = new CompraService({
+        compraRepository: mockCompraRepo,
+        usuarioRepository: mockUsuarioRepo,
+        eventoRepository: mockEventoRepo,
+        reseniaRepository: mockReseniaRepo
+      });
+
+      mockUsuarioRepo.buscarPorId.mockResolvedValue(comprador);
+
+      const compra1 = new Compra({
+        id: 'c-calificada',
+        comprador,
+        evento,
+        tipoEntrada,
+        cantidad: 1,
+        estado: EstadoCompra.UTILIZADA
+      });
+      const compra2 = new Compra({
+        id: 'c-sin-calificar',
+        comprador,
+        evento: new Evento({ id: 'evt-otro', nombre: 'Otro', categoria, fecha: new Date(), tiposEntrada: [tipoEntrada], organizador }),
+        tipoEntrada,
+        cantidad: 1,
+        estado: EstadoCompra.UTILIZADA
+      });
+
+      mockCompraRepo.buscarPorComprador.mockResolvedValue([compra1, compra2]);
+      mockReseniaRepo.buscarPorComprador.mockResolvedValue([
+        {
+          id: 'res-1',
+          compraId: 'c-calificada',
+          evento: { id: 'evt-1' },
+          puntuacion: 5,
+          detalle: 'Espectacular'
+        }
+      ]);
+
+      // Act
+      const resultado = await serviceConResenias.listarComprasPorComprador('comp-1');
+
+      // Assert
+      expect(resultado).toHaveLength(2);
+      expect(resultado[0].yaCalificada).toBe(true);
+      expect(resultado[0].resenia).toEqual({
+        id: 'res-1',
+        puntuacion: 5,
+        detalle: 'Espectacular'
+      });
+      expect(resultado[1].yaCalificada).toBe(false);
+      expect(resultado[1].resenia).toBeNull();
+    });
+
     test('debe lanzar NotFoundError si el comprador no existe', async () => {
       // Arrange
       mockUsuarioRepo.buscarPorId.mockResolvedValue(null);

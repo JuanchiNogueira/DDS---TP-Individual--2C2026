@@ -30,6 +30,22 @@ export class ReseniaRepository {
     );
   }
 
+  buscarPorComprador(compradorId) {
+    if (!compradorId) return [];
+    return Array.from(this.resenias.values()).filter(
+      (resenia) => resenia.comprador?.id === compradorId
+    );
+  }
+
+  buscarPorCompra(compraId) {
+    if (!compraId) return null;
+    return (
+      Array.from(this.resenias.values()).find(
+        (resenia) => resenia.compraId === compraId
+      ) || null
+    );
+  }
+
   calcularPromedioPorOrganizador(organizadorId) {
     const reseniasOrganizador = this.buscarPorOrganizador(organizadorId);
     if (reseniasOrganizador.length === 0) {

@@ -98,6 +98,13 @@ export function MisComprasScreen() {
   };
 
   const handleReseniaPublicada = async () => {
+    if (compraResenia?.id) {
+      setCompras((prev) =>
+        prev.map((c) =>
+          c.id === compraResenia.id ? { ...c, yaCalificada: true } : c
+        )
+      );
+    }
     mostrarMensajeExito(`¡Reseña publicada con éxito para "${compraResenia?.evento?.nombre}"!`);
     await cargarCompras();
   };
@@ -234,18 +241,30 @@ export function MisComprasScreen() {
 
             {/* Botón Calificar Evento (para compras en estado UTILIZADA) */}
             {item.estado === 'UTILIZADA' ? (
-              <TouchableOpacity
-                style={styles.btnCalificar}
-                onPress={() => {
-                  setCompraResenia(item);
-                  setModalReseniaVisible(true);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Calificar Evento"
-                testID={`btn-calificar-compra-${item.id}`}
-              >
-                <Text style={styles.btnCalificarText}>⭐ Calificar Evento</Text>
-              </TouchableOpacity>
+              item.yaCalificada ? (
+                <TouchableOpacity
+                  style={[styles.btnCalificar, styles.btnYaCalificada]}
+                  disabled={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Compra ya calificada"
+                  testID={`btn-ya-calificada-${item.id}`}
+                >
+                  <Text style={styles.btnYaCalificadaText}>✓ Ya calificada</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.btnCalificar}
+                  onPress={() => {
+                    setCompraResenia(item);
+                    setModalReseniaVisible(true);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Calificar Evento"
+                  testID={`btn-calificar-compra-${item.id}`}
+                >
+                  <Text style={styles.btnCalificarText}>⭐ Calificar Evento</Text>
+                </TouchableOpacity>
+              )
             ) : null}
           </View>
         </View>
@@ -506,6 +525,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '800'
+  },
+  btnYaCalificada: {
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    opacity: 0.95
+  },
+  btnYaCalificadaText: {
+    color: '#475569',
+    fontSize: 13,
+    fontWeight: '700'
   },
   emptyContainer: {
     alignItems: 'center',

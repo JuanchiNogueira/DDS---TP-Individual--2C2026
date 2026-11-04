@@ -111,7 +111,10 @@ export const seedDatabase = (repositories = {}) => {
     categoria: catRock,
     fecha: new Date('2027-02-15T18:00:00Z'),
     tiposEntrada: [teRockGeneral, teRockVip],
-    multimedia: ['https://example.com/cosquin.jpg'],
+    multimedia: [
+      'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1200&q=80'
+    ],
     organizador: org1
   });
 
@@ -139,7 +142,10 @@ export const seedDatabase = (repositories = {}) => {
     categoria: catTeatro,
     fecha: new Date('2027-05-20T20:30:00Z'),
     tiposEntrada: [teTeatroPlatea, teTeatroPullman],
-    multimedia: ['https://example.com/toctoc.jpg'],
+    multimedia: [
+      'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?auto=format&fit=crop&w=1200&q=80'
+    ],
     organizador: org2
   });
 
@@ -158,6 +164,9 @@ export const seedDatabase = (repositories = {}) => {
     categoria: catRock,
     fecha: new Date('2025-10-10T21:00:00Z'),
     tiposEntrada: [tePasadoRock],
+    multimedia: [
+      'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=80'
+    ],
     organizador: org1
   });
 
@@ -176,6 +185,9 @@ export const seedDatabase = (repositories = {}) => {
     categoria: catStandUp,
     fecha: new Date('2025-11-05T22:00:00Z'),
     tiposEntrada: [tePasadoStandUp],
+    multimedia: [
+      'https://images.unsplash.com/photo-1585699324551-f6c309eedeca?auto=format&fit=crop&w=1200&q=80'
+    ],
     organizador: org2
   });
 

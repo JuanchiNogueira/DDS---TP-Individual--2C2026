@@ -104,6 +104,40 @@ describe('ReseniaRepository Unit Tests', () => {
     expect(reseniasOrg2).toContain(r2);
   });
 
+  test('debe buscar reseñas por ID del comprador y por ID de compra', () => {
+    // Arrange
+    const r1 = new Resenia({
+      id: 'r-1',
+      comprador: comprador1,
+      evento: evento1,
+      detalle: 'Genial',
+      puntuacion: 5,
+      compraId: 'c-100'
+    });
+    const r2 = new Resenia({
+      id: 'r-2',
+      comprador: comprador2,
+      evento: evento2,
+      detalle: 'Excelente',
+      puntuacion: 4,
+      compraId: 'c-200'
+    });
+
+    repository.guardar(r1);
+    repository.guardar(r2);
+
+    // Act
+    const reseniasComp1 = repository.buscarPorComprador('comp-1');
+    const reseniaCompra100 = repository.buscarPorCompra('c-100');
+    const reseniaCompraInexistente = repository.buscarPorCompra('c-999');
+
+    // Assert
+    expect(reseniasComp1).toHaveLength(1);
+    expect(reseniasComp1[0]).toBe(r1);
+    expect(reseniaCompra100).toBe(r1);
+    expect(reseniaCompraInexistente).toBeNull();
+  });
+
   test('debe calcular el promedio de puntuación por organizador correctamente', () => {
     // Arrange
     const r1 = new Resenia({ id: 'r-1', comprador: comprador1, evento: evento1, detalle: 'Genial', puntuacion: 5 });

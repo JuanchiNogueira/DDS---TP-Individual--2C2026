@@ -315,7 +315,7 @@ export function CatalogoScreen({ onVerDetalle }) {
               <Text
                 style={[styles.sortChipText, ordenarPor === 'precio' && styles.sortChipTextActive]}
               >
-                Precio ↕
+                Precio
               </Text>
             </TouchableOpacity>
 
@@ -329,7 +329,7 @@ export function CatalogoScreen({ onVerDetalle }) {
               <Text
                 style={[styles.sortChipText, ordenarPor === 'fecha' && styles.sortChipTextActive]}
               >
-                Fecha 📅
+                Fecha
               </Text>
             </TouchableOpacity>
 
@@ -343,7 +343,7 @@ export function CatalogoScreen({ onVerDetalle }) {
               <Text
                 style={[styles.sortChipText, ordenarPor === 'puntaje' && styles.sortChipTextActive]}
               >
-                Mejor Puntaje ⭐
+                Mejor Puntaje
               </Text>
             </TouchableOpacity>
 
@@ -356,7 +356,7 @@ export function CatalogoScreen({ onVerDetalle }) {
                 testID="btn-orden-direccion"
               >
                 <Text style={styles.orderDirectionText}>
-                  {orden === 'asc' ? '↑ Asc' : '↓ Desc'}
+                  {orden === 'asc' ? 'Asc' : 'Desc'}
                 </Text>
               </TouchableOpacity>
             ) : null}
