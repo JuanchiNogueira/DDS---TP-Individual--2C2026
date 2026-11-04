@@ -218,7 +218,8 @@ export const swaggerSpec = {
           { name: 'precioMin', in: 'query', schema: { type: 'number' }, example: 5000 },
           { name: 'precioMax', in: 'query', schema: { type: 'number' }, example: 10000 },
           { name: 'ordenarPor', in: 'query', schema: { type: 'string', enum: ['precio', 'fecha', 'puntaje'] }, example: 'precio' },
-          { name: 'orden', in: 'query', schema: { type: 'string', enum: ['asc', 'desc'] }, example: 'asc' }
+          { name: 'orden', in: 'query', schema: { type: 'string', enum: ['asc', 'desc'] }, example: 'asc' },
+          { name: 'incluirPasados', in: 'query', schema: { type: 'boolean' }, description: 'Si es true incluye eventos cuya fecha ya pasó (por defecto solo vigentes)', example: false }
         ],
         responses: {
           200: {

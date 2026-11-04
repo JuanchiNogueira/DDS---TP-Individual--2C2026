@@ -23,6 +23,7 @@
    - [6.2. Pruebas End-to-End (E2E) Automatizadas con Playwright](#62-pruebas-end-to-end-e2e-automatizadas-con-playwright)
 7. [Estructura del Repositorio](#7-estructura-del-repositorio)
 8. [Instrucciones de Ejecución y Pruebas](#8-instrucciones-de-ejecución-y-pruebas)
+9. [Defensa Oral y Justificaciones de Diseño (JUSTIFICACIONES_DISENIO.md)](JUSTIFICACIONES_DISENIO.md)
 
 ---
 
@@ -174,6 +175,7 @@ Los tests E2E validan la integración completa entre el Front-End en React Nativ
 
 ```text
 ├── AGENTS.md                        # Reglas de arquitectura, errores y testing para el agente IA
+├── JUSTIFICACIONES_DISENIO.md       # Justificaciones de arquitectura y soporte para defensa oral
 ├── docker-compose.yml               # Orquestación del contenedor Docker para el Back-End
 ├── backend/
 │   ├── Dockerfile                   # Imagen Node 20 Alpine del servidor Back-End

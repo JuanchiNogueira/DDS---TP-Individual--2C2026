@@ -28,7 +28,10 @@ export const buscarEventosQuerySchema = {
     precioMin: z.coerce.number().min(0).optional(),
     precioMax: z.coerce.number().min(0).optional(),
     ordenarPor: z.enum(['precio', 'fecha', 'puntaje']).optional(),
-    orden: z.enum(['asc', 'desc']).optional()
+    orden: z.enum(['asc', 'desc']).optional(),
+    incluirPasados: z
+      .preprocess((val) => (val === undefined ? undefined : val === 'true' || val === true), z.boolean())
+      .optional()
   })
 };
 

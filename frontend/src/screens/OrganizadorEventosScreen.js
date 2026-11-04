@@ -70,7 +70,9 @@ export function OrganizadorEventosScreen({ onCrearEvento }) {
     try {
       setCargandoEventos(true);
       setErrorEventos(null);
-      const todosLosEventos = await apiClient.get('/eventos');
+      const todosLosEventos = await apiClient.get('/eventos', {
+        params: { incluirPasados: true }
+      });
       // Filtrar únicamente los pertenecientes a este organizador
       const misEventos = (todosLosEventos || []).filter(
         (e) => e.organizador?.id === usuarioActivo.id

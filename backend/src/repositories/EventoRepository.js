@@ -25,8 +25,12 @@ export class EventoRepository {
     return this.listarTodos().filter((evento) => evento.organizador?.id === organizadorId);
   }
 
-  buscarConFiltros({ texto, categoriaId, precioMin, precioMax } = {}) {
+  buscarConFiltros({ texto, categoriaId, precioMin, precioMax, soloVigentes = false } = {}) {
     return this.listarTodos().filter((evento) => {
+      if (soloVigentes && evento.yaOcurrio()) {
+        return false;
+      }
+
       if (texto && typeof texto === 'string' && texto.trim()) {
         const query = texto.trim().toLowerCase();
         const coincideNombre = evento.nombre.toLowerCase().includes(query);

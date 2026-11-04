@@ -199,6 +199,43 @@ describe('EventoRepository Unit Tests', () => {
     expect(filtroRangoInvertido).toHaveLength(0);
   });
 
+  test('debe filtrar eventos pasados cuando soloVigentes es true', () => {
+    // Arrange
+    const entrada = new TipoEntrada({ nombre: 'General', precio: 3000, cupo: 20 });
+    const fechaFutura = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
+    const fechaPasada = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30);
+
+    const evFuturo = new Evento({
+      id: 'e-futuro',
+      nombre: 'Evento Futuro',
+      categoria: categoriaRock,
+      fecha: fechaFutura,
+      tiposEntrada: [entrada],
+      organizador: organizador1
+    });
+
+    const evPasado = new Evento({
+      id: 'e-pasado',
+      nombre: 'Evento Pasado',
+      categoria: categoriaRock,
+      fecha: fechaPasada,
+      tiposEntrada: [entrada],
+      organizador: organizador1
+    });
+
+    repository.guardar(evFuturo);
+    repository.guardar(evPasado);
+
+    // Act
+    const soloVigentes = repository.buscarConFiltros({ soloVigentes: true });
+    const todos = repository.buscarConFiltros({ soloVigentes: false });
+
+    // Assert
+    expect(soloVigentes).toHaveLength(1);
+    expect(soloVigentes[0].id).toBe('e-futuro');
+    expect(todos).toHaveLength(2);
+  });
+
   test('debe limpiar todos los eventos almacenados', () => {
     // Arrange
     const entrada = new TipoEntrada({ nombre: 'General', precio: 3000, cupo: 20 });

@@ -62,13 +62,22 @@ export class EventoService {
     precioMin,
     precioMax,
     ordenarPor,
-    orden
+    orden,
+    incluirPasados = false,
+    soloVigentes
   } = {}) {
+    const deberiaIncluirPasados =
+      incluirPasados === true ||
+      incluirPasados === 'true' ||
+      soloVigentes === false ||
+      soloVigentes === 'false';
+
     const eventos = await this.eventoRepository.buscarConFiltros({
       texto,
       categoriaId,
       precioMin,
-      precioMax
+      precioMax,
+      soloVigentes: !deberiaIncluirPasados
     });
 
     const puntajesCache = new Map();

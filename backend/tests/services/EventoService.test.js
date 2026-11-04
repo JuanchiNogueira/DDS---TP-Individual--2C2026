@@ -193,6 +193,31 @@ describe('EventoService Unit Tests with Mocks', () => {
       expect(resultados[0].id).toBe('e-2');
       expect(resultados[1].id).toBe('e-1');
     });
+
+    test('debe solicitar solo eventos vigentes por defecto y todos si incluirPasados es true', async () => {
+      // Arrange
+      mockEventoRepo.buscarConFiltros.mockResolvedValue([]);
+
+      // Act
+      await eventoService.buscarEventos({ texto: 'Rock' });
+      await eventoService.buscarEventos({ texto: 'Rock', incluirPasados: true });
+
+      // Assert
+      expect(mockEventoRepo.buscarConFiltros).toHaveBeenNthCalledWith(1, {
+        texto: 'Rock',
+        categoriaId: undefined,
+        precioMin: undefined,
+        precioMax: undefined,
+        soloVigentes: true
+      });
+      expect(mockEventoRepo.buscarConFiltros).toHaveBeenNthCalledWith(2, {
+        texto: 'Rock',
+        categoriaId: undefined,
+        precioMin: undefined,
+        precioMax: undefined,
+        soloVigentes: false
+      });
+    });
   });
 
   describe('obtenerDetalleEvento', () => {
