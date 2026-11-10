@@ -167,6 +167,17 @@ express.json() ➡️ cors() ➡️ router ➡️ notFoundHandler (3 params) ➡
 ### 6. Atomicidad de Cupos en el Event Loop
 * Dado que Node.js ejecuta código síncrono en un único hilo principal (*Single-Threaded Event Loop*), la invocación a `tipoEntrada.descontarCupo(cantidad)` en memoria es atómica. No hay condiciones de carrera donde dos hilos accedan concurrentemente a modificar la misma variable de stock.
 
+### 7. Mecanismo de Mensajería: API REST y Enfoque Pull (vs. Push / WebSockets)
+* **Naturaleza RESTful y *Stateless*:** La mensajería entre Comprador y Organizador no requiere ni utiliza conexiones persistentes con sockets bidireccionales (`ws://`), Server-Sent Events (SSE) ni brokers externos de mensajería (como Socket.io o RabbitMQ). Opera íntegramente sobre el protocolo HTTP mediante endpoints REST estándar:
+  * **Envío:** `POST /compras/:id/mensajes` (con payload JSON `{ usuarioId, texto }`, respondiendo con código semántico `201 Created` y el recurso `Mensaje` instanciado).
+  * **Consulta:** Los mensajes se recuperan como sub-recurso embebido dentro de la entidad `Compra` en `GET /compras/comprador/:compradorId` o `GET /eventos/:eventoId/compras`.
+* **Mecanismo Pull a Demanda (*On-Demand Pull*):**
+  * La iniciativa de la comunicación la tiene exclusivamente el **cliente (Front-End)**, quien solicita o "jala" (*pull*) los datos al servidor cuando los necesita (al abrir el modal de chat en `ChatCompraModal.js` o al reconsultar tras un envío exitoso).
+  * El **servidor es pasivo**: no empuja (*push*) datos de manera reactiva hacia los clientes conectados. Si un organizador responde una consulta, el comprador no verá el nuevo mensaje mágicamente en tiempo real mientras mantenga la pantalla estática, sino cuando vuelva a consultar al servidor (reingreso a la vista o refresco de datos).
+* **Justificación de la decisión (KISS y Cohesión Arquitectónica):**
+  * Evita la sobreingeniería de mantener un servidor con estado (*stateful connection pools*), administración de eventos *heartbeat*, problemas de reconexión móvil y consumo innecesario de batería/red.
+  * Mantiene la arquitectura 100% *stateless* requerida en Express, simplificando radicalmente la testabilidad unitaria (Jest con mocks) y de extremo a extremo (Playwright) sin dependencias asíncronas no determinísticas.
+
 ---
 
 ## 7. Recorrido de Flujo Completo (End-to-End Walkthrough)
@@ -238,3 +249,6 @@ sequenceDiagram
 
 ### P4: ¿Por qué el proyecto usa Zod si ya valida en el Dominio?
 > **Respuesta:** *"Porque cumplen roles arquitectónicos diferentes: **Zod realiza validación sintáctica** (formato, tipos primitivos, campos obligatorios de la petición HTTP) actuando como barrera de entrada temprana (*Fail Fast*). **El Dominio realiza validación semántica** (si hay cupo disponible, si la fecha del evento ya pasó o si el usuario tiene autorización para chatear)."*
+
+### P5: ¿Podría decirse que el sistema de mensajería aplicado está realizado con API REST y un mecanismo pull?
+> **Respuesta:** *"Sí, con total certeza. El sistema de mensajería se diseñó sobre una **API REST síncrona y un mecanismo Pull a demanda (On-Demand Pull)**. Todas las interacciones se realizan mediante el ciclo tradicional Request-Response vía HTTP (`POST /compras/:id/mensajes` para enviar y peticiones `GET` para leer). No se utilizaron WebSockets ni mecanismos Push del servidor para mantener la arquitectura de Express estrictamente sin estado (*stateless*), respetar el principio de simplicidad (KISS) y facilitar el testing automatizado y determinístico sin complejidad de conexiones persistentes."*

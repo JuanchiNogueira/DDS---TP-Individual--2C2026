@@ -1,0 +1,134 @@
+@startuml DiagramaClasesDominio
+skinparam classAttributeIconSize 0
+skinparam monochrome false
+skinparam shadowing true
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam class {
+    BackgroundColor White
+    ArrowColor #2563EB
+    BorderColor #1E293B
+}
+
+title Diagrama de Clases UML - Modelo de Dominio (AI Ticket It)
+
+enum EstadoCompra {
+  + PENDIENTE
+  + CONFIRMADA
+  + UTILIZADA
+  + CANCELADA
+  + REEMBOLSADA
+}
+
+class Usuario {
+  - id: String
+  - nombre: String
+  - apellido: String
+  - favoritos: List<Evento>
+  + get nombreCompleto(): String
+  + agregarFavorito(evento: Evento): void
+  + removerFavorito(eventoId: String): void
+  + esFavorito(eventoId: String): Boolean
+}
+
+class Categoria {
+  - id: String
+  - nombre: String
+  - descripcion: String
+}
+
+class TipoEntrada {
+  - id: String
+  - nombre: String
+  - descripcion: String
+  - precio: Number
+  - cupo: Integer
+  - cupoInicial: Integer
+  + hayCupoPara(cantidad: Integer): Boolean
+  + descontarCupo(cantidad: Integer): void
+  + restituirCupo(cantidad: Integer): void
+}
+
+class Evento {
+  - id: String
+  - nombre: String
+  - descripcion: String
+  - fecha: Date
+  - multimedia: List<String>
+  + tuPrecioEstaEntre(min: Number, max: Number): Boolean
+  + agregarTipoEntrada(tipoEntrada: TipoEntrada): void
+  + obtenerTipoEntrada(id: String): TipoEntrada
+  + obtenerPrecioMinimo(): Number
+  + yaOcurrio(fechaReferencia: Date): Boolean
+  + yaPaso(fechaReferencia: Date): Boolean
+}
+
+class Compra {
+  - id: String
+  - cantidad: Integer
+  - total: Number
+  - fechaCreacion: Date
+  + actualizarEstado(nuevoEstado: EstadoCompra, quien: Usuario, motivo: String): void
+  + calcularDiasParaElEvento(fechaReferencia: Date): Integer
+  + calcularDiasFaltantes(fechaReferencia: Date): Integer
+  + cancelar(quien: Usuario, fechaReferencia: Date, motivo: String): void
+  + marcarComoUtilizada(quien: Usuario): void
+  + agregarMensaje(usuario: Usuario, texto: String): Mensaje
+}
+
+class CambioEstadoCompra {
+  - id: String
+  - fechaHora: Date
+  - motivo: String
+  + toJSON(): Object
+}
+
+class Mensaje {
+  - id: String
+  - mensaje: String
+  - enviado: Date
+}
+
+class Resenia {
+  - id: String
+  - detalle: String
+  - puntuacion: Integer
+  - compraId: String
+  - fecha: Date
+  + {static} crearDesdeCompra(compra: Compra, datos: Object): Resenia
+}
+
+abstract class DomainError {
+  - statusCode: Integer
+  - status: String
+  - timestamp: String
+}
+
+class ValidationError extends DomainError
+class ForbiddenDomainError extends DomainError
+class NotFoundError extends DomainError
+class ConflictError extends DomainError
+
+' --- Relaciones y Cardinalidades ---
+Evento "0..*" --> "1" Categoria : categoria
+Evento "0..*" --> "1" Usuario : organizador
+Evento "1" *-- "1..*" TipoEntrada : tiposEntrada
+Usuario "1" o-- "0..*" Evento : favoritos
+
+Compra "0..*" --> "1" Usuario : comprador
+Compra "0..*" --> "1" Evento : evento
+Compra "0..*" --> "1" TipoEntrada : tipoEntrada
+Compra "0..*" --> "1" EstadoCompra : estado
+Compra "1" *-- "0..*" CambioEstadoCompra : cambiosEstado
+Compra "1" *-- "0..*" Mensaje : mensajes
+
+CambioEstadoCompra "0..*" --> "1" Usuario : quien
+CambioEstadoCompra "0..*" --> "1" EstadoCompra : estado
+CambioEstadoCompra "0..*" --> "1" Compra : compra
+
+Mensaje "0..*" --> "1" Usuario : usuario
+
+Resenia "0..*" --> "1" Usuario : comprador
+Resenia "0..*" --> "1" Evento : evento
+Resenia ..> Compra : <<crearDesdeCompra>>
+
+@enduml
